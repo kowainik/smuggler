@@ -1,7 +1,6 @@
 module Main where
 
-import Smuggler (someFunc)
+import Smuggler (parseFile)
 
 main :: IO ()
-main = someFunc
-
+main = parseFile
