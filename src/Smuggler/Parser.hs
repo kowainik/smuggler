@@ -10,11 +10,15 @@ import HsSyn (HsModule (..))
 import RdrName (RdrName)
 import SrcLoc (Located)
 
+import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Debug (debugAST)
+
 parseFile :: IO ()
 parseFile = do
-    let path = "src/Smuggler/Parser.hs"
+    let path = "test/input.hs"
     (anns, ast) <- runParser path
-    putStrLn $ exactPrint ast anns
+    -- debugAST anns
+    putStrLn $ exactPrint ast $ removeAnnAtLoc 4 19 anns
 
 runParser :: FilePath -> IO (Anns, Located (HsModule RdrName))
 runParser fileName = do
