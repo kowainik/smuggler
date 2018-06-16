@@ -20,11 +20,15 @@ library
   hs-source-dirs:      src
   exposed-modules:     Prelude
                        Smuggler
+                         Smuggler.Debug
+                         Smuggler.Parser
 
   ghc-options:         -Wall
   build-depends:       base-noprelude
+                     , fmt
                      , ghc
                      , ghc-exactprint
+                     , pretty-simple
                      , universum >= 1.2.0
 
   default-extensions:  DeriveGeneric
