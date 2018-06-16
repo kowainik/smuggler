@@ -2,30 +2,28 @@ module Smuggler
        ( parseFile
        ) where
 
-import Language.Haskell.GHC.ExactPrint.Parsers (withDynFlags)
+import Control.Exception (throwIO)
 
-import DynFlags (DynFlags)
-import FastString (mkFastString)
+import Language.Haskell.GHC.ExactPrint (Anns, exactPrint, parseModule)
+
 import HsSyn (HsModule (..))
-import Lexer (ParseResult (..), mkPState, unP)
-import Outputable (showPpr)
-import Parser (parseModule)
 import RdrName (RdrName)
-import SrcLoc (Located, mkRealSrcLoc)
-import StringBuffer (stringToStringBuffer)
+import SrcLoc (Located)
 
 parseFile :: IO ()
 parseFile = do
     let path = "src/Smuggler.hs"
-    fileContent <- readFile path
-    dynFlags <- withDynFlags id
-    case runParser path dynFlags (toString fileContent) of
-        POk _ ast -> putStrLn $ showPpr dynFlags ast
-        _         -> putTextLn "Oops :("
+    (anns, ast) <- runParser path
+    putStrLn $ exactPrint ast anns
 
-runParser :: FilePath -> DynFlags -> String -> ParseResult (Located (HsModule RdrName))
-runParser fileName flags str = unP parseModule parseState
-  where
-    location = mkRealSrcLoc (mkFastString fileName) 1 1
-    buffer = stringToStringBuffer str
-    parseState = mkPState flags buffer location
+runParser :: FilePath -> IO (Anns, Located (HsModule RdrName))
+runParser fileName = do
+    res <- parseModule fileName
+    case res of
+        Right x              -> pure x
+        Left (_srcSpan, str) -> throwIO $ ParseException str
+
+data ParseException = ParseException String
+    deriving (Show)
+
+instance Exception ParseException
