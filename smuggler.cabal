@@ -20,11 +20,13 @@ library
   hs-source-dirs:      src
   exposed-modules:     Prelude
                        Smuggler
+                         Smuggler.Anns
                          Smuggler.Debug
                          Smuggler.Parser
 
   ghc-options:         -Wall
   build-depends:       base-noprelude
+                     , containers >= 0.5
                      , fmt
                      , ghc
                      , ghc-exactprint
