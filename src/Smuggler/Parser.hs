@@ -11,7 +11,7 @@ import RdrName (RdrName)
 import SrcLoc (Located)
 
 import Smuggler.Anns (removeAnnAtLoc)
-import Smuggler.Debug (debugAST)
+-- import Smuggler.Debug (debugAST)
 
 parseFile :: IO ()
 parseFile = do
