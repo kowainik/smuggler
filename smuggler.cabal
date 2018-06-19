@@ -22,6 +22,7 @@ library
                        Smuggler
                          Smuggler.Anns
                          Smuggler.Debug
+                         Smuggler.Modules
                          Smuggler.Name
                          Smuggler.Parser
 
@@ -34,6 +35,7 @@ library
                      , pretty-simple
                      , syb
                      , universum >= 1.2.0
+                     , unordered-containers >= 0.2
 
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
