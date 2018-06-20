@@ -7,10 +7,12 @@ import Control.Exception (throwIO)
 import Language.Haskell.GHC.ExactPrint (Anns, exactPrint, parseModule)
 
 import HsSyn (HsModule (..))
+import OccName (occNameString)
 import RdrName (RdrName)
 import SrcLoc (Located)
 
 import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Name (moduleBodyNames)
 -- import Smuggler.Debug (debugAST)
 
 parseFile :: IO ()
@@ -19,6 +21,9 @@ parseFile = do
     (anns, ast) <- runParser path
     -- debugAST anns
     putStrLn $ exactPrint ast $ removeAnnAtLoc 4 19 anns
+
+    putTextLn "=== OccNames ==="
+    putTextLn $ unlines $ map (toText . occNameString) $ moduleBodyNames ast
 
 runParser :: FilePath -> IO (Anns, Located (HsModule RdrName))
 runParser fileName = do
