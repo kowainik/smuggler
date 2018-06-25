@@ -22,6 +22,8 @@ library
                        Smuggler
                          Smuggler.Anns
                          Smuggler.Debug
+                         Smuggler.Import
+                         Smuggler.Loc
                          Smuggler.Name
                          Smuggler.Parser
 
@@ -34,6 +36,7 @@ library
                      , pretty-simple
                      , syb
                      , universum >= 1.2.0
+                     , unordered-containers >= 0.2
 
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
@@ -42,6 +45,7 @@ library
                        OverloadedStrings
                        RecordWildCards
                        ScopedTypeVariables
+                       StandaloneDeriving
 
   default-language:    Haskell2010
 

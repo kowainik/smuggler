@@ -9,18 +9,23 @@ import Language.Haskell.GHC.ExactPrint (Anns, exactPrint, parseModule)
 import HsSyn (HsModule (..))
 import OccName (occNameString)
 import RdrName (RdrName)
-import SrcLoc (Located)
+import SrcLoc (GenLocated (L), Located)
 
 import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Import (getLocationMap)
 import Smuggler.Name (moduleBodyNames)
 -- import Smuggler.Debug (debugAST)
 
 parseFile :: IO ()
 parseFile = do
     let path = "test/input.hs"
-    (anns, ast) <- runParser path
+    (anns, ast@(L _ hsMod)) <- runParser path
     -- debugAST anns
-    putStrLn $ exactPrint ast $ removeAnnAtLoc 4 19 anns
+    putStrLn $ exactPrint ast $ removeAnnAtLoc 5 22 anns
+
+    -- imports
+    putTextLn "=== Imports map ==="
+    putTextLn $ show $ keys $ getLocationMap hsMod
 
     putTextLn "=== OccNames ==="
     putTextLn $ unlines $ map (toText . occNameString) $ moduleBodyNames ast
