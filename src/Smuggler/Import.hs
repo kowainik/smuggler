@@ -2,11 +2,9 @@
 
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Smuggler.Modules
+module Smuggler.Import
        ( Import (..)
        , getLocationMap
        ) where
@@ -19,7 +17,9 @@ import Module (ModuleName, moduleName, moduleNameString)
 import Name (nameOccName)
 import OccName (occNameString)
 import RdrName (RdrName (..))
-import SrcLoc (GenLocated (L), Located, SrcSpan (..), srcSpanStartCol, srcSpanStartLine)
+import SrcLoc (GenLocated (L), Located, SrcSpan)
+
+import Smuggler.Loc (showL, showLoc)
 
 import qualified Data.HashMap.Strict as HashMap
 import qualified Text.Show as Show (show)
@@ -65,13 +65,6 @@ showLIE (L _ ie) = showIE ie
     showIEWrappedName (IEType located)    = showL " IEType " show located
 
 
-    showLoc :: SrcSpan -> String
-    showLoc (RealSrcSpan r) = show (srcSpanStartLine r) ++ ":" ++ show (srcSpanStartCol r)
-    showLoc loc             = show loc
-
-    showL :: String -> (a -> String) -> Located a -> String
-    showL name showA (L l nm) = "(" ++ showLoc l ++ name ++ showA nm ++ ")"
-
     showIEWildCard :: IEWildcard -> String
     showIEWildCard NoIEWildcard   = ""
     showIEWildCard (IEWildcard n) = "(..)" ++ show n
@@ -83,7 +76,7 @@ instance Show RdrName where
     show (Exact nm)             = occNameString $ nameOccName nm
 
 instance Hashable (Import name) where
-    hashWithSalt salt Import{..} = hashWithSalt salt impId
+    hashWithSalt salt = hashWithSalt salt . impId
 
 getLocationMap :: (Eq name) => HsModule name -> HashMap (Import name) SrcSpan
 getLocationMap HsModule{..} =  HashMap.fromList $ fromDecls hsmodImports

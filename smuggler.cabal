@@ -22,7 +22,8 @@ library
                        Smuggler
                          Smuggler.Anns
                          Smuggler.Debug
-                         Smuggler.Modules
+                         Smuggler.Import
+                         Smuggler.Loc
                          Smuggler.Name
                          Smuggler.Parser
 
@@ -44,6 +45,7 @@ library
                        OverloadedStrings
                        RecordWildCards
                        ScopedTypeVariables
+                       StandaloneDeriving
 
   default-language:    Haskell2010
 

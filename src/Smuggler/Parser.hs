@@ -12,7 +12,7 @@ import RdrName (RdrName)
 import SrcLoc (GenLocated (L), Located)
 
 import Smuggler.Anns (removeAnnAtLoc)
-import Smuggler.Modules (getLocationMap)
+import Smuggler.Import (getLocationMap)
 import Smuggler.Name (moduleBodyNames)
 -- import Smuggler.Debug (debugAST)
 
