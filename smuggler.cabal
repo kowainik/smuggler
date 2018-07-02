@@ -14,29 +14,31 @@ build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
 cabal-version:       2.0
-tested-with:         GHC == 8.2.2
+tested-with:         GHC == 8.6.1
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Prelude
-                       Smuggler
-                         Smuggler.Anns
-                         Smuggler.Debug
-                         Smuggler.Import
-                         Smuggler.Loc
-                         Smuggler.Name
-                         Smuggler.Parser
+  exposed-modules:
+--                     Smuggler
+                         Smuggler.Plugin
+--                          Smuggler.Anns
+--                          Smuggler.Debug
+--                          Smuggler.Import
+--                          Smuggler.Loc
+--                          Smuggler.Name
+--                          Smuggler.Parser
+--                       Prelude
 
   ghc-options:         -Wall
-  build-depends:       base-noprelude >= 4.9 && < 5
-                     , containers >= 0.5
-                     , fmt
-                     , ghc == 8.2.2
-                     , ghc-exactprint
-                     , pretty-simple
-                     , syb
-                     , universum >= 1.2.0
-                     , unordered-containers >= 0.2
+  build-depends:       base >= 4.12 && < 5
+                     , ghc >= 8.6.0
+--                      , containers >= 0.5
+--                      , fmt
+--                      , ghc-exactprint
+--                      , pretty-simple
+--                      , syb
+--                      , universum >= 1.2.0
+--                      , unordered-containers >= 0.2
 
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
@@ -53,7 +55,8 @@ executable smuggler
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base-noprelude
+                       -fplugin=Smuggler.Plugin
+  build-depends:       base
                      , smuggler
 
   default-extensions:  DeriveGeneric
