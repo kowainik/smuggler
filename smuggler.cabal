@@ -32,9 +32,9 @@ library
   ghc-options:         -Wall
   build-depends:       base >= 4.12 && < 5
                      , ghc >= 8.6.0
+--                      , ghc-exactprint
 --                      , containers >= 0.5
 --                      , fmt
---                      , ghc-exactprint
 --                      , pretty-simple
 --                      , syb
 --                      , universum >= 1.2.0

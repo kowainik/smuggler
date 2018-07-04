@@ -1,5 +1,10 @@
 module Main where
 
+import Data.List (sort)
+import Data.Maybe (fromMaybe, maybe)
+
+foo = False
+
 main :: IO ()
-main = return ()
+main = print $ fromMaybe True Nothing
 -- main = parseFile
