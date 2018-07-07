@@ -3,40 +3,23 @@ module Smuggler.Plugin
        ) where
 
 import Control.Monad.IO.Class (MonadIO (..))
--- import Language.Haskell.GHC.ExactPrint (exactPrint, parseModule)
+import Language.Haskell.GHC.ExactPrint (exactPrint)
 
-import DynFlags (getDynFlags)
-import FastString (unpackFS)
-import HscTypes (HsParsedModule, Hsc, ModSummary (..))
-import Outputable (ppr, showSDoc)
+import HscTypes (ModSummary (..))
 import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
-import SrcLoc (srcSpanFile)
 import TcRnTypes (TcGblEnv (..), TcM)
 
--- import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Parser (runParser)
 
 plugin :: Plugin
-plugin = defaultPlugin
-    { renamedResultAction = Just $ \_ _ _ -> pure ()
-    , typeCheckResultAction = typecheckPlugin
-    }
+plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin }
 
-typecheckPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
-typecheckPlugin _ ms env = do
---    dflags <- getDynFlags
---     liftIO $ putStrLn $ "rn rn imports: \n" ++ (showSDoc dflags $ ppr $ tcg_rn_imports env)
---
---     liftIO $ putStrLn $ "decls: \n" ++ (showSDoc dflags $ ppr $ tcg_rn_decls env)
---     liftIO $ putStrLn $ "src-span: \n" ++ (showSDoc dflags $ ppr $ srcSpanFile $ tcg_top_loc env)
+smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
+smugglerPlugin _ modSummary tcEnv = do
+    let modulePath = ms_hspp_file modSummary
 
-    liftIO $ putStrLn $ "path: " ++ ms_hspp_file ms
+    (anns, ast) <- liftIO $ runParser modulePath
+    liftIO $ putStrLn $ exactPrint ast $ removeAnnAtLoc 4 31 anns
 
-    let modulePath = unpackFS $ srcSpanFile $ tcg_top_loc env
---   (anns, ast@(L _ hsMod)) <- runParser modulePath
-    moduleSrc <- liftIO $ readFile modulePath
-    liftIO $ putStrLn $ "module source:\n" ++ moduleSrc
-
-    -- debugAST anns
---    putStrLn $ exactPrint ast $ removeAnnAtLoc 4 29 anns
-
-    pure env
+    pure tcEnv

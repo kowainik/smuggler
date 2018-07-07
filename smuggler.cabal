@@ -20,25 +20,24 @@ library
   hs-source-dirs:      src
   exposed-modules:
 --                     Smuggler
+                         Smuggler.Anns
+                         Smuggler.Loc
+                         Smuggler.Parser
                          Smuggler.Plugin
---                          Smuggler.Anns
+--                         Smuggler.Import
+--                         Smuggler.Name
 --                          Smuggler.Debug
---                          Smuggler.Import
---                          Smuggler.Loc
---                          Smuggler.Name
---                          Smuggler.Parser
 --                       Prelude
 
   ghc-options:         -Wall
-  build-depends:       base >= 4.12 && < 5
+  build-depends:       base >= 4.7 && < 5
+                     , containers >= 0.5
                      , ghc >= 8.6.0
---                      , ghc-exactprint
---                      , containers >= 0.5
+                     , ghc-exactprint >= 0.5.7.0
+                     , unordered-containers >= 0.2.7
 --                      , fmt
 --                      , pretty-simple
 --                      , syb
---                      , universum >= 1.2.0
---                      , unordered-containers >= 0.2
 
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
