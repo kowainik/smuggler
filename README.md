@@ -7,3 +7,23 @@
 
 Smuggling
 
+## Build instructions
+
+### First time
+
+```shell
+$ mkdir deps
+$ cd deps
+$ git clone git@github.com:alanz/ghc-exactprint.git
+$ cd ghc-exactprint
+$ git checkout ghc-8.6
+$ # comment line with `hashable` package in `packages` field in `cabal.project` file
+$ cd ../..
+$ cabal new-build --allow-newer
+```
+
+### Second time
+
+```shell
+$ cabal new-build --allow-newer
+```
