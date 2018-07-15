@@ -1,6 +1,5 @@
 with-compiler: /opt/ghc/8.6.1/bin/ghc
 packages: .
-        , deps/ghc-exactprint
 
 repository head.hackage
    url: http://head.hackage.haskell.org/

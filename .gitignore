@@ -25,6 +25,9 @@ cabal.project.local
 .ghc.environment.*
 .HTF/
 
+# Smuggler cache
+.smuggler/
+
 # Stack
 .stack-work/
 
