@@ -22,9 +22,9 @@ library
                        Smuggler.Loc
                        Smuggler.Parser
                        Smuggler.Plugin
+                       Smuggler.Debug
 --                         Smuggler.Import
 --                         Smuggler.Name
---                          Smuggler.Debug
 --                       Prelude
 
   ghc-options:         -Wall
@@ -36,8 +36,9 @@ library
                      , ghc-exactprint >= 0.5.7.0
                      , hash-store >= 0.1.0
                      , unordered-containers >= 0.2.7
---                      , fmt
---                      , pretty-simple
+                     , fmt
+                     , pretty-simple
+                     , text
 --                      , syb
 
   default-extensions:  DeriveGeneric
