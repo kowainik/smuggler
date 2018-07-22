@@ -71,7 +71,7 @@ smugglerPlugin clis modSummary tcEnv = do
                 let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
                 let newContent = exactPrint ast purifiedAnnotations
                 case clis of
-                    []      -> putStrLn newContent
+                    []      -> writeFile modulePath newContent
                     (ext:_) -> writeFile (modulePath -<.> ext) newContent
         -- 4. Return empty ByteString
         pure ""
