@@ -23,6 +23,7 @@ import Name (Name)
 import Outputable
 import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
+import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
 import SrcLoc (GenLocated (..), SrcSpan (..), getLoc, srcSpanStartCol, srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
@@ -49,7 +50,7 @@ smugglerPlugin _ modSummary tcEnv = do
 
     pure tcEnv
   where
---    smuggling :: FilePath -> ByteString -> IO ByteString
+    smuggling :: [GlobalRdrElt] -> FilePath -> ByteString -> IO ByteString
     smuggling uses modulePath _ = do
         -- 1. find positions of unused imports
         let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)

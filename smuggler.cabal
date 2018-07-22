@@ -25,9 +25,7 @@ library
                        Smuggler.Debug
 --                         Smuggler.Import
 --                         Smuggler.Name
---                       Prelude
 
-  ghc-options:         -Wall
   build-depends:       base >= 4.7 && < 5
                      , bytestring >= 0.10
                      , containers >= 0.5
@@ -36,11 +34,13 @@ library
                      , ghc-exactprint >= 0.5.7.0
                      , hash-store >= 0.1.0
                      , unordered-containers >= 0.2.7
+
+                       -- Debug dependencies; in separate section to easy comment before release
                      , fmt
                      , pretty-simple
                      , text
---                      , syb
 
+  ghc-options:         -Wall
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
                        InstanceSigs
