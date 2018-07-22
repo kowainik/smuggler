@@ -14,11 +14,11 @@ main = do
 
 
     -- clean up all .test files
-    putStrLn ("Cleaning tests" :: String)
+    putStrLn "Cleaning tests"
     for_ testFiles removeFile
 
     -- clean up .smuggler/ cache directory
-    putStrLn ("Cleaning smuggler cache" :: String)
+    putStrLn "Cleaning smuggler cache"
     removeDirectoryRecursive ".smuggler"
 
     if result
