@@ -1,11 +1,10 @@
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ViewPatterns  #-}
 
 module Smuggler.Plugin
        ( plugin
        ) where
 
-import Control.Monad (void)
+import Control.Monad (guard, void)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.ByteString (ByteString)
 import Data.List (foldl')
@@ -13,23 +12,19 @@ import HashStore (hashStore)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
 import System.FilePath (takeFileName)
 
-import DynFlags (getDynFlags)
 import HscTypes (ModSummary (..))
-import HsDoc
 import HsExtension (GhcRn)
 import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
 import Name (Name)
-import Outputable
 import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), getLoc, srcSpanStartCol, srcSpanStartLine, unLoc)
+import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanStartCol, srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc)
-import Smuggler.Debug (debugAST)
 import Smuggler.Parser (runParser)
 
 import qualified Data.ByteString as BS
@@ -67,8 +62,9 @@ smugglerPlugin _ modSummary tcEnv = do
         pure ""
 
 unusedLocs ::ImportDeclUsage -> [(Int, Int)]
+unusedLocs (L (UnhelpfulSpan _) _, _, _) = []
 unusedLocs (L (RealSrcSpan loc) decl, used, unused)
-    -- Do not warn for `import M ()`
+    -- Do not remove `import M ()`
     | Just (False, L _ []) <- ideclHiding decl
     = []
 
@@ -89,13 +85,13 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
 
     -- only part of non-hiding import is used
     | Just (False, L _ lies) <- ideclHiding decl
-    = unusedEntries lies
+    = unusedLies lies
 
     -- TODO: unused hidings
     | otherwise = []
   where
-    unusedEntries :: [LIE GhcRn] -> [(Int, Int)]
-    unusedEntries = concatMap lieToLoc
+    unusedLies :: [LIE GhcRn] -> [(Int, Int)]
+    unusedLies = concatMap lieToLoc
 
     lieToLoc :: LIE GhcRn -> [(Int, Int)]
     lieToLoc (L _ lie) = case lie of
@@ -106,6 +102,7 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
         _                            -> []
 
     lieNameToLoc :: LIEWrappedName Name -> [(Int, Int)]
-    lieNameToLoc (unLoc -> IEName (L (RealSrcSpan lieLoc) name)) =
-        if name `elem` unused then [(srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)] else []
-    lieNameToLoc _ = []
+    lieNameToLoc lieName = do
+        L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
+        guard $ name `elem` unused
+        pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
