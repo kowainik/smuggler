@@ -1,0 +1,6 @@
+module Test.TypeUsed where
+
+import Data.Bool (Bool,)
+
+foo :: Bool
+foo = undefined

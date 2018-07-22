@@ -1,0 +1,5 @@
+module Test.TypeUnused where
+
+import Data.Bool ( not)
+
+foo = not

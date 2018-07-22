@@ -58,3 +58,6 @@ TAGS
 
 # other
 .DS_Store
+
+test/Test.golden
+test/Test.test
