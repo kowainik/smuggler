@@ -6,41 +6,31 @@ git:
 
 cache:
   directories:
-  - "$HOME/.stack"
-  - "$HOME/build/kowainik/smuggler/.stack-work"
+  - "$HOME/.cabal"
+  - "$HOME/.ghc"
 
 matrix:
   include:
 
-  
-
-  - ghc: 8.2.2
-    env: GHCVER='8.2.2' STACK_YAML="$HOME/build/kowainik/smuggler/stack.yaml"
-
-addons:
-  apt:
-    sources:
-      - sourceline: 'ppa:hvr/ghc'
-    packages:
-      - libgmp-dev
-
-before_install:
-  - mkdir -p ~/.local/bin
-  - export PATH="$HOME/.local/bin:$PATH"
-  - travis_retry curl -L 'https://www.stackage.org/stack/linux-x86_64' | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  - stack --version
-
+  - ghc: 8.6.1
+    env: GHCVER='8.6.1' CABALVER='head'
+    os: linux
+    addons:
+      apt:
+        sources:
+        - hvr-ghc
+        packages:
+        - ghc-8.6.1
+        - cabal-install-head
 
 install:
-  - travis_wait 30 stack setup --no-terminal
-  - stack ghc -- --version
-
-  - travis_wait 40 stack build --only-dependencies --no-terminal
-  - travis_wait 40 stack build --test --bench --haddock --no-run-tests --no-run-benchmarks --no-haddock-deps --no-terminal
+- export PATH="/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH"
+- echo $PATH
+- cabal new-update
+- cabal new-build --enable-tests --enable-benchmarks --allow-newer
 
 script:
-  - travis_wait 40 stack build --test --no-terminal
+- cabal new-test --allow-newer
 
 notifications:
   email: false
-
