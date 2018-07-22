@@ -10,7 +10,6 @@ import Data.ByteString (ByteString)
 import Data.List (foldl')
 import HashStore (hashStore)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
-import System.FilePath (takeFileName)
 
 import HscTypes (ModSummary (..))
 import HsExtension (GhcRn)
@@ -35,30 +34,42 @@ plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin }
 cacheDir :: FilePath
 cacheDir = ".smuggler"
 
+munglePath :: FilePath -> FilePath
+munglePath = \case
+    []       -> []
+    '/' : xs -> '.' : munglePath xs
+    c   : xs -> c   : munglePath xs
+
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin _ modSummary tcEnv = do
     let modulePath = ms_hspp_file modSummary
 
-    fileContent <- liftIO $ BS.readFile modulePath
     uses <- readMutVar (tcg_used_gres tcEnv)
-    liftIO $ void $ hashStore cacheDir (smuggling uses modulePath) (takeFileName modulePath, fileContent)  -- TODO: remove takeFileName
+    fileContent <- liftIO $ BS.readFile modulePath
+    let modifiedName = munglePath modulePath
+
+    liftIO $ void $ hashStore cacheDir
+                              (smuggling uses modulePath)
+                              (modifiedName, fileContent)
 
     pure tcEnv
   where
     smuggling :: [GlobalRdrElt] -> FilePath -> ByteString -> IO ByteString
-    smuggling uses modulePath _ = do
-        -- 1. find positions of unused imports
-        let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
-        let usage = findImportUsage user_imports uses
-        let unusedPositions = concatMap unusedLocs usage
---        debugAST unusedPositions
+    smuggling uses modulePath _ =  do
+        -- 1. Parse given file
+        runParser modulePath >>= \case -- TODO: don't read file, use given ByteString
+            Left () -> pure ()  -- do nothing if file is invalid Haskell
+            Right (anns, ast) -> do
+                -- 2. find positions of unused imports
+                let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
+                let usage = findImportUsage user_imports uses
+                let unusedPositions = concatMap unusedLocs usage
 
-        -- 2. Remove positions of unused imports from annotations.
-        (anns, ast) <- runParser modulePath  -- TODO: don't read file, use given ByteString
-        let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
-        putStrLn $ exactPrint ast purifiedAnnotations
+                -- 3. Remove positions of unused imports from annotations.
+                let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
+                putStrLn $ exactPrint ast purifiedAnnotations
 
-        -- 3. Return empty ByteString
+        -- 4. Return empty ByteString
         pure ""
 
 unusedLocs ::ImportDeclUsage -> [(Int, Int)]
