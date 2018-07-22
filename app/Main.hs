@@ -1,7 +1,6 @@
 module Main where
 
 import Data.Bool (Bool (False, True), bool)
-
 import Data.List (sort)
 import Data.Maybe (fromMaybe, maybe)
 

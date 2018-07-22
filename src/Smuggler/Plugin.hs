@@ -17,7 +17,7 @@ import DynFlags (getDynFlags)
 import HscTypes (ModSummary (..))
 import HsDoc
 import HsExtension (GhcRn)
-import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE)
+import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
 import Name (Name)
 import Outputable
@@ -55,7 +55,7 @@ smugglerPlugin _ modSummary tcEnv = do
         let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
         let usage = findImportUsage user_imports uses
         let unusedPositions = concatMap unusedLocs usage
-        debugAST unusedPositions
+--        debugAST unusedPositions
 
         -- 2. Remove positions of unused imports from annotations.
         (anns, ast) <- runParser modulePath  -- TODO: don't read file, use given ByteString
@@ -97,6 +97,14 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     unusedEntries = concatMap lieToLoc
 
     lieToLoc :: LIE GhcRn -> [(Int, Int)]
-    lieToLoc (L (RealSrcSpan lieLoc) lie) = case lie of
-        IEVar _ (unLoc -> IEName (L _ name)) -> if name `elem` unused then [(srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)] else []
-        _ -> []
+    lieToLoc (L _ lie) = case lie of
+        IEVar _ name                 -> lieNameToLoc name
+        IEThingAbs _ name            -> lieNameToLoc name
+        IEThingAll _ name            -> lieNameToLoc name
+        IEThingWith _ name _ names _ -> concatMap lieNameToLoc (name : names)
+        _                            -> []
+
+    lieNameToLoc :: LIEWrappedName Name -> [(Int, Int)]
+    lieNameToLoc (unLoc -> IEName (L (RealSrcSpan lieLoc) name)) =
+        if name `elem` unused then [(srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)] else []
+    lieNameToLoc _ = []
