@@ -21,6 +21,6 @@ $ cabal new-build --allow-newer
 
 ### Run tests
 
-```shel
+```shell
 $ cabal new-test --allow-newer
 ```
