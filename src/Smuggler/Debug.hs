@@ -6,24 +6,30 @@ module Smuggler.Debug
        ( debugAST
        ) where
 
-import Data.Typeable (typeRep)
+import Data.Proxy (Proxy (..))
+import Data.Text (Text)
+import Data.Text.Lazy (toStrict)
+import Data.Typeable (Typeable, typeRep)
 import Fmt (fmt, padLeftF)
 import Text.Pretty.Simple (pShow)
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 -- | Helper function to debug different parts of AST processing.
 {-# WARNING debugAST "'debugAST' remains in code" #-}
 debugAST :: forall a . (Show a, Typeable a) => a -> IO ()
 debugAST ast = do
     let header = "==================== || " <> typeName @a <> " || ====================\n"
-    putTextLn $ (header <>)
-              $ unlines
-              $ zipWith (\i line -> lineNumber i <> "| " <> line) [1..]
-              $ lines
-              $ toStrict
-              $ pShow ast
+    T.putStrLn $ (header <>)
+               $ T.unlines
+               $ zipWith (\i line -> lineNumber i <> "| " <> line) [1..]
+               $ T.lines
+               $ toStrict
+               $ pShow ast
   where
     lineNumber :: Int -> Text
     lineNumber = fmt . padLeftF 4 ' '
 
 typeName :: forall a . Typeable a => Text
-typeName = show $ typeRep $ Proxy @a
+typeName = T.pack $ show $ typeRep $ Proxy @a
