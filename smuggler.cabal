@@ -1,15 +1,15 @@
 name:                smuggler
 version:             0.0.0
-description:         Smuggling
 synopsis:            Smuggling
+description:         GHC compiler plugin which helps to manage imports
 homepage:            https://github.com/kowainik/smuggler
 bug-reports:         https://github.com/kowainik/smuggler/issues
-license:             MIT
+license:             MPL-2.0
 license-file:        LICENSE
 author:              Kowainik
 maintainer:          xrom.xkov@gmail.com
 copyright:           2018 Kowainik
-category:            Development
+category:            Development, Refactoring
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
