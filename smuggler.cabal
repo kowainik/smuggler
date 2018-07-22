@@ -68,3 +68,32 @@ executable smuggler
                        RecordWildCards
 
   default-language:    Haskell2010
+
+test-suite smuggler-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+
+  main-is:             Test.hs
+  other-modules:       Test.BoolBoolUsed
+                       Test.BoolBoolUnused
+                       Test.BoolPartlyUsedFirst
+                       Test.BoolPartlyUsedLast
+                       Test.Dummy
+                       Test.ImportEmpty
+                       Test.TypeConstructorUsed
+                       Test.TypeConstructorUnused
+                       Test.TypeUnused
+                       Test.TypeUsed
+
+  build-depends:       base
+                     , directory
+                     , filepath
+                     , smuggler
+
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+                       -fno-warn-unused-imports
+                       -fno-warn-missing-signatures
+                       -fhide-source-paths
+                       -fplugin=Smuggler.Plugin
+                       -fplugin-opt=Smuggler.Plugin:test
+  default-language:    Haskell2010
