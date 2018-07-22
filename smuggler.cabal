@@ -1,5 +1,5 @@
 name:                smuggler
-version:             0.0.0
+version:             0.0.1
 synopsis:            Smuggling
 description:         GHC compiler plugin which helps to manage imports
 homepage:            https://github.com/kowainik/smuggler
