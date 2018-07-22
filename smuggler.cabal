@@ -80,6 +80,7 @@ test-suite smuggler-test
                        Test.BoolPartlyUsedLast
                        Test.Dummy
                        Test.ImportEmpty
+                       Test.MultilineUnused
                        Test.TypeConstructorUsed
                        Test.TypeConstructorUnused
                        Test.TypeUnused

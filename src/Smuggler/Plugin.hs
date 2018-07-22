@@ -21,7 +21,8 @@ import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanStartCol, srcSpanStartLine, unLoc)
+import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndLine, srcSpanStartCol, srcSpanStartLine,
+               unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc)
@@ -92,7 +93,10 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     -- Nothing used; drop entire decl
     -- TODO: drop every line of multiline import
     -- TODO: optimize
-    | null used = map (srcSpanStartLine loc,) [1..100]
+    | null used = [ (lineNum, colNum)
+                  | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
+                  , colNum <- [1..100]
+                  ]
 
     -- Everything imported is used; drop nothing
     | null unused = []
