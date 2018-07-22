@@ -10,6 +10,7 @@ import Data.ByteString (ByteString)
 import Data.List (foldl')
 import HashStore (hashStore)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
+import System.FilePath ((-<.>))
 
 import HscTypes (ModSummary (..))
 import HsExtension (GhcRn)
@@ -41,7 +42,7 @@ munglePath = \case
     c   : xs -> c   : munglePath xs
 
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
-smugglerPlugin _ modSummary tcEnv = do
+smugglerPlugin clis modSummary tcEnv = do
     let modulePath = ms_hspp_file modSummary
 
     uses <- readMutVar (tcg_used_gres tcEnv)
@@ -67,8 +68,10 @@ smugglerPlugin _ modSummary tcEnv = do
 
                 -- 3. Remove positions of unused imports from annotations.
                 let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
-                putStrLn $ exactPrint ast purifiedAnnotations
-
+                let newContent = exactPrint ast purifiedAnnotations
+                case clis of
+                    []      -> putStrLn newContent
+                    (ext:_) -> writeFile (modulePath -<.> ext) newContent
         -- 4. Return empty ByteString
         pure ""
 

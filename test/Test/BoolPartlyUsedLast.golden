@@ -1,0 +1,5 @@
+module Test.BoolPartlyUsedLast where
+
+import Data.Bool ( not)
+
+foo = not
