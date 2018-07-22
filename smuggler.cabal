@@ -16,17 +16,21 @@ extra-doc-files:     README.md
 cabal-version:       2.0
 tested-with:         GHC == 8.6.1
 
+source-repository head
+  type:     git
+  location: git@github.com:kowainik/smuggler.git
+
 library
   hs-source-dirs:      src
   exposed-modules:     Smuggler.Anns
                        Smuggler.Loc
                        Smuggler.Parser
                        Smuggler.Plugin
-                       Smuggler.Debug
+--                         Smuggler.Debug
 --                         Smuggler.Import
 --                         Smuggler.Name
 
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.9 && < 5
                      , bytestring >= 0.10
                      , containers >= 0.5
                      , filepath >= 1.4
@@ -36,9 +40,9 @@ library
                      , unordered-containers >= 0.2.7
 
                        -- Debug dependencies; in separate section to easy comment before release
-                     , fmt
-                     , pretty-simple
-                     , text
+--                      , fmt
+--                      , pretty-simple
+--                      , text
 
   ghc-options:         -Wall
   default-extensions:  DeriveGeneric
