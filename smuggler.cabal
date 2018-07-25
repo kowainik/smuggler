@@ -89,6 +89,8 @@ test-suite smuggler-test
                        Test.TypeConstructorUnused
                        Test.TypeUnused
                        Test.TypeUsed
+                       Test.WildcardUsed
+                       Test.WildcardUnused
 
   build-depends:       base
                      , directory
