@@ -1,7 +1,14 @@
+cabal-version:       2.0
 name:                smuggler
-version:             0.0.1
-synopsis:            Smuggling
-description:         GHC compiler plugin which helps to manage imports
+version:             0.1.0
+synopsis:            GHC Source Plugin that helps to manage imports
+description:
+    == Usage
+    .
+    Add @smuggler@ to the dependencies of your project.
+    .
+    Then add the following options: @-fplugin=Smuggler.Plugin@
+
 homepage:            https://github.com/kowainik/smuggler
 bug-reports:         https://github.com/kowainik/smuggler/issues
 license:             MPL-2.0
@@ -13,7 +20,6 @@ category:            Development, Refactoring
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-cabal-version:       2.0
 tested-with:         GHC == 8.6.1
 
 source-repository head
@@ -30,14 +36,14 @@ library
 --                         Smuggler.Import
 --                         Smuggler.Name
 
-  build-depends:       base >= 4.9 && < 5
-                     , bytestring >= 0.10
-                     , containers >= 0.5
-                     , filepath >= 1.4
-                     , ghc >= 8.6.0
-                     , ghc-exactprint >= 0.5.7.0
-                     , hash-store >= 0.1.0
-                     , unordered-containers >= 0.2.7
+  build-depends:       base >= 4.12 && < 5
+                     , bytestring ^>= 0.10
+                     , containers >= 0.5 && < 0.7
+                     , filepath ^>= 1.4
+                     , ghc ^>= 8.6.0
+                     , ghc-exactprint ^>= 0.5.8.0
+                     , hash-store ^>= 0.1.0
+                     , unordered-containers ^>= 0.2.7
 
                        -- Debug dependencies; in separate section to easy comment before release
 --                      , fmt
