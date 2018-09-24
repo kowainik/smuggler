@@ -1,7 +1,8 @@
 module Main where
 
-import Data.Bool (Bool ( True), bool)
-import Data.Maybe (fromMaybe,)
+import Data.Bool (Bool (False, True), bool)
+import Data.List (sort)
+import Data.Maybe (fromMaybe, maybe)
 
 main :: IO ()
 main = do

@@ -12,12 +12,6 @@
 >
 > ― Amara Lakhous, Clash of Civilizations Over an Elevator in Piazza Vittorio
 
-> “It was justice,” Stannis said. “A good act does not wash out the bad, nor a
-> bad act the good. Each should have its own reward. You were a hero and a
-> smuggler.”
->
-> ― George R.R. Martin, A Clash of Kings
-
 Haskell Source Plugin which removes unused imports automatically.
 
 ## How to use
@@ -29,7 +23,7 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
-## Build instructions
+## For contributors
 
 Requirements:
 

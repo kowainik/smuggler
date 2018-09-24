@@ -62,11 +62,11 @@ library
 
   default-language:    Haskell2010
 
-executable smuggler
+executable play-smuggler
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
-                       -fplugin=Smuggler.Plugin
+--                       -fplugin=Smuggler.Plugin
   build-depends:       base
                      , smuggler
 
