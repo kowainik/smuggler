@@ -9,4 +9,5 @@ setup-info:
 resolver: ghc-8.6.1
 compiler: ghc-8.6.1
 compiler-check: match-exact
-packages: []
+packages:
+  - location: .
