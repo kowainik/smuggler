@@ -91,7 +91,6 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     = []
 
     -- Nothing used; drop entire decl
-    -- TODO: optimize
     | null used = [ (lineNum, colNum)
                   | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
                   , colNum <- [srcSpanStartCol loc .. srcSpanEndCol loc]
