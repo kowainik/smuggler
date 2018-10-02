@@ -1,0 +1,7 @@
+resolver: nightly-2018-10-01
+
+packages:
+  - location: .
+
+extra-deps:
+ - hash-store-0.1.0@sha256:aa7a3e9c1e4d6eb426a0682b8d2164c3d954b23d34e9ca33c9f04fbc9e5198a3

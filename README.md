@@ -36,10 +36,10 @@ $ cabal new-update
 $ cabal new-build
 ```
 
-#### Stack on MacOS: How to build?
+#### Stack: How to build?
 
 ```shell
-$ STACK_YAML=stack-mac-8.6.1.yaml stack build
+$ stack build
 ```
 
 ### Run tests
