@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 module Smuggler.Plugin
        ( plugin
        ) where
@@ -57,9 +55,9 @@ smugglerPlugin clis modSummary tcEnv = do
     pure tcEnv
   where
     smuggling :: [GlobalRdrElt] -> FilePath -> ByteString -> IO ByteString
-    smuggling uses modulePath _ =  do
+    smuggling uses modulePath fileContents =  do
         -- 1. Parse given file
-        runParser modulePath >>= \case -- TODO: don't read file, use given ByteString
+        runParser modulePath fileContents >>= \case
             Left () -> pure ()  -- do nothing if file is invalid Haskell
             Right (anns, ast) -> do
                 -- 2. find positions of unused imports
