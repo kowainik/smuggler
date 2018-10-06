@@ -14,13 +14,13 @@ import HscTypes (ModSummary (..))
 import HsExtension (GhcRn)
 import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
-import Name (Name)
+import Name (Name, nameSrcSpan)
 import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine, srcSpanStartCol,
-               srcSpanStartLine, unLoc)
+import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine,
+               srcSpanStartCol, srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc)
@@ -64,7 +64,6 @@ smugglerPlugin clis modSummary tcEnv = do
                 let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
                 let usage = findImportUsage user_imports uses
                 let unusedPositions = concatMap unusedLocs usage
-
                 -- 3. Remove positions of unused imports from annotations.
                 let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
                 let newContent = exactPrint ast purifiedAnnotations
@@ -91,7 +90,7 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     -- Nothing used; drop entire decl
     | null used = [ (lineNum, colNum)
                   | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
-                  , colNum <-  [srcSpanStartCol loc .. srcSpanEndCol loc]
+                  , colNum <-  [srcSpanStartCol loc .. getEndColMax unused]
                   ]
 
     -- Everything imported is used; drop nothing
@@ -120,3 +119,6 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
         L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
         guard $ name `elem` unused
         pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
+    getEndColMax u = maximum $ map (findColLoc . nameSrcSpan) u
+    findColLoc (RealSrcSpan l) =  srcSpanEndCol l
+    findColLoc (UnhelpfulSpan _) = 100
