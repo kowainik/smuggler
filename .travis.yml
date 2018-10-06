@@ -23,7 +23,7 @@ matrix:
         - ghc-8.6.1
         - cabal-install-head
 
- - ghc: 8.6.1
+  - ghc: 8.6.1
     env: GHCVER='8.6.1' STACK_YAML="$TRAVIS_BUILD_DIR/stack-$GHCVER.yaml"
     os: linux
     addons:
