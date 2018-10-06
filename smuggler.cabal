@@ -100,6 +100,7 @@ test-suite smuggler-test
                        Test.WildcardUnused
 
   build-depends:       base
+                     , ansi-terminal
                      , directory
                      , filepath
                      , smuggler
