@@ -21,7 +21,6 @@ import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
 import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine, srcSpanStartCol,
                srcSpanStartLine, unLoc)
-import Name (nameSrcSpan)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc)
@@ -92,7 +91,7 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     -- Nothing used; drop entire decl
     | null used = [ (lineNum, colNum)
                   | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
-                  , colNum <- [srcSpanStartCol loc .. getLastSpanEnd unused]
+                  , colNum <-  [srcSpanStartCol loc .. srcSpanEndCol loc]
                   ]
 
     -- Everything imported is used; drop nothing
@@ -121,6 +120,3 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
         L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
         guard $ name `elem` unused
         pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
-    getLastSpanEnd uimp = maximum $ (findColLoc . nameSrcSpan) <$> uimp
-    findColLoc (RealSrcSpan l) =  srcSpanEndCol l
-    findColLoc _ = 0
