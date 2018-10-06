@@ -23,13 +23,21 @@ matrix:
         - ghc-8.6.1
         - cabal-install-head
 
+  - ghc: 8.6.1
+    env: GHCVER='8.6.1' STACK_YAML="$TRAVIS_BUILD_DIR/stack.yaml"
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libgmp-dev
+
 install:
   - |
     if [ -z "$STACK_YAML" ]; then
       export PATH="/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH"
       echo $PATH
       cabal new-update
-      cabal new-build --enable-tests --enable-benchmarks --allow-newer
+      cabal new-build --enable-tests --enable-benchmarks
     else
       mkdir -p ~/.local/bin
       export PATH="$HOME/.local/bin:$PATH"
@@ -42,7 +50,7 @@ install:
 script:
   - |
     if [ -z "$STACK_YAML" ]; then
-       cabal new-test --allow-newer
+       cabal new-test
     else
       stack build --test --no-terminal
     fi
