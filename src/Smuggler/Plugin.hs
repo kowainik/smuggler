@@ -14,13 +14,13 @@ import HscTypes (ModSummary (..))
 import HsExtension (GhcRn)
 import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
-import Name (Name)
+import Name (Name, nameSrcSpan)
 import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndLine, srcSpanStartCol, srcSpanStartLine,
-               unLoc)
+import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine,
+               srcSpanStartCol, srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc)
@@ -39,6 +39,9 @@ munglePath = \case
     []       -> []
     '/' : xs -> '.' : munglePath xs
     c   : xs -> c   : munglePath xs
+
+defaultCol :: Int
+defaultCol = 120
 
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin clis modSummary tcEnv = do
@@ -64,7 +67,6 @@ smugglerPlugin clis modSummary tcEnv = do
                 let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
                 let usage = findImportUsage user_imports uses
                 let unusedPositions = concatMap unusedLocs usage
-
                 -- 3. Remove positions of unused imports from annotations.
                 let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
                 let newContent = exactPrint ast purifiedAnnotations
@@ -89,10 +91,9 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     = []
 
     -- Nothing used; drop entire decl
-    -- TODO: optimize
     | null used = [ (lineNum, colNum)
                   | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
-                  , colNum <- [1..100]
+                  , colNum <-  [srcSpanStartCol loc .. getEndColMax unused]
                   ]
 
     -- Everything imported is used; drop nothing
@@ -121,3 +122,15 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
         L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
         guard $ name `elem` unused
         pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
+
+    getEndColMax :: [Name] -> Int
+    getEndColMax u = listMax $ map (findColLoc . nameSrcSpan) u
+
+    findColLoc :: SrcSpan -> Int
+    findColLoc (RealSrcSpan l) =  srcSpanEndCol l
+    findColLoc (UnhelpfulSpan _) = defaultCol
+
+listMax :: [Int] -> Int
+listMax [] = defaultCol
+listMax [x] = x
+listMax (x:y:xs) = listMax ((if x >= y then x else y):xs)
