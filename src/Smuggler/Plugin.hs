@@ -40,6 +40,9 @@ munglePath = \case
     '/' : xs -> '.' : munglePath xs
     c   : xs -> c   : munglePath xs
 
+defaultCol :: Int
+defaultCol = 120
+
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin clis modSummary tcEnv = do
     let modulePath = ms_hspp_file modSummary
@@ -119,6 +122,15 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
         L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
         guard $ name `elem` unused
         pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
-    getEndColMax u = maximum $ map (findColLoc . nameSrcSpan) u
+
+    getEndColMax :: [Name] -> Int
+    getEndColMax u = listMax $ map (findColLoc . nameSrcSpan) u
+
+    findColLoc :: SrcSpan -> Int
     findColLoc (RealSrcSpan l) =  srcSpanEndCol l
-    findColLoc (UnhelpfulSpan _) = 100
+    findColLoc (UnhelpfulSpan _) = defaultCol
+
+listMax :: [Int] -> Int
+listMax [] = defaultCol
+listMax [x] = x
+listMax (x:y:xs) = listMax ((if x >= y then x else y):xs)
