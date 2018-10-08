@@ -1,10 +1,11 @@
 module Main where
 
+import Control.Monad (when)
 import Data.Foldable (for_)
 import Data.List (intercalate, isPrefixOf)
 import System.Console.ANSI (Color (..), ColorIntensity (Dull), ConsoleIntensity (BoldIntensity),
                             ConsoleLayer (Foreground), SGR (..), setSGR)
-import System.Directory (listDirectory, removeDirectoryRecursive, removeFile)
+import System.Directory (doesDirectoryExist, listDirectory, removeDirectoryRecursive, removeFile)
 import System.Exit (exitFailure)
 import System.FilePath (isExtensionOf, splitExtension, (<.>), (</>))
 
@@ -20,8 +21,10 @@ main = do
     for_ testFiles removeFile
 
     -- clean up .smuggler/ cache directory
-    putStrLn "Cleaning smuggler cache"
-    removeDirectoryRecursive ".smuggler"
+    cacheDirExists <- doesDirectoryExist ".smuggler"
+    when cacheDirExists $ do
+      putStrLn "Cleaning smuggler cache"
+      removeDirectoryRecursive ".smuggler"
 
     if result
         then successMessage "Success"
