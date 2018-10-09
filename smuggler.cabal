@@ -90,6 +90,8 @@ test-suite smuggler-test
                        Test.BoolPartlyUsedLast
                        Test.ConstructorsUnused
                        Test.Dummy
+                       Test.ImplicitImportUsed
+                       Test.ImplicitImportUnused
                        Test.ImportEmpty
                        Test.MultilineUnused
                        Test.TypeConstructorUsed
