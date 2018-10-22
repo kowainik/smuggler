@@ -23,7 +23,7 @@ import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine,
                srcSpanStartCol, srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
-import Smuggler.Anns (removeAnnAtLoc)
+import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
 import Smuggler.Parser (runParser)
 
 import qualified Data.ByteString as BS
@@ -68,7 +68,7 @@ smugglerPlugin clis modSummary tcEnv = do
                 let usage = findImportUsage user_imports uses
                 let unusedPositions = concatMap unusedLocs usage
                 -- 3. Remove positions of unused imports from annotations.
-                let purifiedAnnotations = foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions
+                let purifiedAnnotations = removeTrailingCommas (foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions)
                 let newContent = exactPrint ast purifiedAnnotations
                 case clis of
                     []      -> writeFile modulePath newContent

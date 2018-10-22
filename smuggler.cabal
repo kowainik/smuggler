@@ -96,6 +96,7 @@ test-suite smuggler-test
                        Test.MultilineUnused
                        Test.TypeConstructorUsed
                        Test.TypeConstructorUnused
+                       Test.TypeConstructorUnusedComma
                        Test.TypeUnused
                        Test.TypeUsed
                        Test.WildcardUsed
