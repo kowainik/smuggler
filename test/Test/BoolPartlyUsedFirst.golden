@@ -1,5 +1,5 @@
 module Test.BoolPartlyUsedFirst where
 
-import Data.Bool (bool,)
+import Data.Bool (bool)
 
 foo = bool
