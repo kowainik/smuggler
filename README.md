@@ -23,6 +23,12 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
+You can also use `smuggler` with `ghcid` to enable on-the-fly features:
+
+```
+ghcid --command='cabal new-repl --ghc-options="-fplugin=Smuggler.Plugin"'
+```
+
 ## For contributors
 
 Requirements:
