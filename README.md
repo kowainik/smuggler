@@ -33,7 +33,7 @@ ghcid --command='cabal new-repl --ghc-options="-fplugin=Smuggler.Plugin"'
 
 Requirements:
 
-* `ghc-8.6.1`
+* `ghc-8.6.3`
 
 ### Cabal: How to build?
 
