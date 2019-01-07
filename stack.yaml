@@ -1,4 +1,4 @@
-resolver: nightly-2018-10-01
+resolver: lts-13.1
 
 packages:
   - location: .

@@ -20,7 +20,7 @@ category:            Development, Refactoring
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.6.1
+tested-with:         GHC == 8.6.3
 
 source-repository head
   type:     git

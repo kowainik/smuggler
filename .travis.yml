@@ -1,58 +1,40 @@
 sudo: true
-language: generic
+language: haskell
 
 git:
   depth: 5
 
+cabal: head
+
 cache:
   directories:
-  - "$HOME/.cabal"
+  - "$HOME/.cabal/store"
   - "$HOME/.stack"
   - "$TRAVIS_BUILD_DIR/.stack-work"
 
 matrix:
   include:
+  - ghc: 8.6.3
+    env: CABALVER='head'
   - ghc: 8.6.1
-    env: GHCVER='8.6.1' CABALVER='head'
-    os: linux
-    addons:
-      apt:
-        sources:
-        - hvr-ghc
-        packages:
-        - ghc-8.6.1
-        - cabal-install-head
-
-  - ghc: 8.6.1
-    env: GHCVER='8.6.1' STACK_YAML="$TRAVIS_BUILD_DIR/stack.yaml"
-    os: linux
-    addons:
-      apt:
-        packages:
-        - libgmp-dev
+    env: STACK_YAML="$TRAVIS_BUILD_DIR/stack.yaml"
 
 install:
   - |
     if [ -z "$STACK_YAML" ]; then
-      export PATH="/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH"
-      echo $PATH
       cabal new-update
       cabal new-build --enable-tests --enable-benchmarks
     else
-      mkdir -p ~/.local/bin
-      export PATH="$HOME/.local/bin:$PATH"
-      travis_retry curl -L 'https://www.stackage.org/stack/linux-x86_64' | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+      curl -sSL https://get.haskellstack.org/ | sh
       stack --version
-      stack setup --no-terminal --install-cabal 2.2.0.1
-      stack ghc -- --version
-      stack build --only-dependencies --no-terminal
+      stack build --system-ghc --only-dependencies --test --no-run-tests --no-terminal
     fi
 script:
   - |
     if [ -z "$STACK_YAML" ]; then
        cabal new-test
     else
-      stack build --test --no-terminal
+      stack build --system-ghc --test --no-terminal
     fi
 notifications:
   email: false
