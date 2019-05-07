@@ -1,4 +1,4 @@
-cabal-version:       2.0
+cabal-version:       2.4
 name:                smuggler
 version:             0.1.0
 synopsis:            GHC Source Plugin that helps to manage imports
@@ -13,20 +13,43 @@ homepage:            https://github.com/kowainik/smuggler
 bug-reports:         https://github.com/kowainik/smuggler/issues
 license:             MPL-2.0
 license-file:        LICENSE
-author:              Kowainik
-maintainer:          xrom.xkov@gmail.com
+author:              Dmitrii Kovanikov, Veronika Romashkina
+maintainer:          Kowainik <xrom.xkov@gmail.com>
 copyright:           2018 Kowainik
 category:            Development, Refactoring
 build-type:          Simple
 extra-doc-files:     README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.6.3
+tested-with:         GHC == 8.6.5
 
 source-repository head
   type:     git
   location: git@github.com:kowainik/smuggler.git
 
+common common-options
+  build-depends:       base ^>= 4.12
+  ghc-options:         -Wall
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+
+  default-extensions:  DeriveGeneric
+                       GeneralizedNewtypeDeriving
+                       InstanceSigs
+                       LambdaCase
+                       OverloadedStrings
+                       RecordWildCards
+                       ScopedTypeVariables
+                       StandaloneDeriving
+                       TypeApplications
+
+  default-language:    Haskell2010
+
 library
+  import:              common-options
   hs-source-dirs:      src
   exposed-modules:     Smuggler.Anns
                        Smuggler.Loc
@@ -36,8 +59,7 @@ library
 --                         Smuggler.Import
 --                         Smuggler.Name
 
-  build-depends:       base >= 4.12 && < 5
-                     , bytestring ^>= 0.10
+  build-depends:       bytestring ^>= 0.10
                      , containers >= 0.5 && < 0.7
                      , filepath ^>= 1.4
                      , ghc ^>= 8.6.0
@@ -50,36 +72,16 @@ library
 --                      , pretty-simple
 --                      , text
 
-  ghc-options:         -Wall
-  default-extensions:  DeriveGeneric
-                       GeneralizedNewtypeDeriving
-                       InstanceSigs
-                       LambdaCase
-                       OverloadedStrings
-                       RecordWildCards
-                       ScopedTypeVariables
-                       StandaloneDeriving
-
-  default-language:    Haskell2010
-
 executable play-smuggler
+  import:              common-options
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 --                       -fplugin=Smuggler.Plugin
-  build-depends:       base
-                     , smuggler
-
-  default-extensions:  DeriveGeneric
-                       GeneralizedNewtypeDeriving
-                       InstanceSigs
-                       LambdaCase
-                       OverloadedStrings
-                       RecordWildCards
-
-  default-language:    Haskell2010
+  build-depends:       smuggler
 
 test-suite smuggler-test
+  import:              common-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
 
@@ -102,16 +104,13 @@ test-suite smuggler-test
                        Test.WildcardUsed
                        Test.WildcardUnused
 
-  build-depends:       base
-                     , ansi-terminal
+  build-depends:       ansi-terminal
                      , directory
                      , filepath
                      , smuggler
 
-  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
                        -fno-warn-unused-imports
                        -fno-warn-missing-signatures
-                       -fhide-source-paths
                        -fplugin=Smuggler.Plugin
                        -fplugin-opt=Smuggler.Plugin:test
-  default-language:    Haskell2010
