@@ -2,11 +2,9 @@ module Smuggler.Plugin
        ( plugin
        ) where
 
-import Control.Monad (guard, void)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO (..))
-import Data.ByteString (ByteString)
 import Data.List (foldl')
-import HashStore (hashStore)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
 import System.FilePath ((-<.>))
 
@@ -19,8 +17,8 @@ import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine,
-               srcSpanStartCol, srcSpanStartLine, unLoc)
+import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine, srcSpanStartCol,
+               srcSpanStartLine, unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
@@ -28,17 +26,9 @@ import Smuggler.Parser (runParser)
 
 import qualified Data.ByteString as BS
 
+
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin }
-
-cacheDir :: FilePath
-cacheDir = ".smuggler"
-
-munglePath :: FilePath -> FilePath
-munglePath = \case
-    []       -> []
-    '/' : xs -> '.' : munglePath xs
-    c   : xs -> c   : munglePath xs
 
 defaultCol :: Int
 defaultCol = 120
@@ -46,19 +36,14 @@ defaultCol = 120
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin clis modSummary tcEnv = do
     let modulePath = ms_hspp_file modSummary
-
     uses <- readMutVar (tcg_used_gres tcEnv)
-    fileContent <- liftIO $ BS.readFile modulePath
-    let modifiedName = munglePath modulePath
-
-    liftIO $ void $ hashStore cacheDir
-                              (smuggling uses modulePath)
-                              (modifiedName, fileContent)
-
-    pure tcEnv
+    tcEnv <$ liftIO (smuggling uses modulePath)
   where
-    smuggling :: [GlobalRdrElt] -> FilePath -> ByteString -> IO ByteString
-    smuggling uses modulePath fileContents =  do
+    smuggling :: [GlobalRdrElt] -> FilePath -> IO ()
+    smuggling uses modulePath = do
+        -- 0. Read file content as a raw ByteString
+        fileContents <- BS.readFile modulePath
+
         -- 1. Parse given file
         runParser modulePath fileContents >>= \case
             Left () -> pure ()  -- do nothing if file is invalid Haskell
@@ -67,16 +52,20 @@ smugglerPlugin clis modSummary tcEnv = do
                 let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
                 let usage = findImportUsage user_imports uses
                 let unusedPositions = concatMap unusedLocs usage
-                -- 3. Remove positions of unused imports from annotations.
-                let purifiedAnnotations = removeTrailingCommas (foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unusedPositions)
-                let newContent = exactPrint ast purifiedAnnotations
-                case clis of
-                    []      -> writeFile modulePath newContent
-                    (ext:_) -> writeFile (modulePath -<.> ext) newContent
-        -- 4. Return empty ByteString
-        pure ""
 
-unusedLocs ::ImportDeclUsage -> [(Int, Int)]
+                -- 3. Remove positions of unused imports from annotations
+                case unusedPositions of
+                    [] -> pure ()  -- do nothing if no unused imports
+                    unused -> do
+                        let purifiedAnnotations = removeTrailingCommas
+                                $ foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) anns unused
+                        let newContent = exactPrint ast purifiedAnnotations
+                        case clis of
+                            []      -> writeFile modulePath newContent
+                            (ext:_) -> writeFile (modulePath -<.> ext) newContent
+
+-- TODO: reuse more logic from GHC. Is it possible?
+unusedLocs :: ImportDeclUsage -> [(Int, Int)]
 unusedLocs (L (UnhelpfulSpan _) _, _, _) = []
 unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     -- Do not remove `import M ()`
@@ -127,10 +116,10 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     getEndColMax u = listMax $ map (findColLoc . nameSrcSpan) u
 
     findColLoc :: SrcSpan -> Int
-    findColLoc (RealSrcSpan l) =  srcSpanEndCol l
+    findColLoc (RealSrcSpan l)   =  srcSpanEndCol l
     findColLoc (UnhelpfulSpan _) = defaultCol
 
 listMax :: [Int] -> Int
-listMax [] = defaultCol
-listMax [x] = x
+listMax []       = defaultCol
+listMax [x]      = x
 listMax (x:y:xs) = listMax ((if x >= y then x else y):xs)

@@ -23,33 +23,36 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
-You can also use `smuggler` with `ghcid` to enable on-the-fly features:
+Lovely addition to this package is that it automatically supports on-the-fly
+feature if you use it with `ghcid`. Smuggler doesn't perform file changes when
+there are no unused imports. So you can just run `ghcid` as usual:
 
 ```
-ghcid --command='cabal new-repl --ghc-options="-fplugin=Smuggler.Plugin"'
+ghcid --command='cabal repl'
 ```
 
 ## For contributors
 
 Requirements:
 
-* `ghc-8.6.3`
+* `ghc-8.6.5`
+* `cabal >= 3.0` or `stack >= 2.0`
 
 ### Cabal: How to build?
 
 ```shell
-$ cabal new-update
-$ cabal new-build
+cabal update
+cabal build
 ```
 
 #### Stack: How to build?
 
 ```shell
-$ stack build
+stack build
 ```
 
 ### Run tests
 
 ```shell
-$ cabal new-test --allow-newer
+cabal test --enable-tests
 ```
