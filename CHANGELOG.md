@@ -3,8 +3,11 @@
 `smuggler` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-## Unreleased
+## Unreleased: 0.2.0.0
 
+* [#39](https://github.com/kowainik/smuggler/issues/39):
+  Change files only when there're warnings. Remove `hash-store` dependencies and
+  a need to have local cache.
 * [#7](https://github.com/kowainik/smuggler/issues/7):
   Remove trailing commas in imports.
 * [#30](https://github.com/kowainik/smuggler/issues/30):
@@ -15,7 +18,7 @@ The change log is available [on GitHub][2].
   Check if cache directory already exists before removing.
 * [#52](https://github.com/kowainik/smuggler/issues/52):
   Use `ByteString` instead of `FilePath` in `Parser`.
-* Upgrade to GHC-8.6.3
+* Upgrade to GHC-8.6.5
 * Improve tests output.
 
 ## 0.1.0 — Sep 24, 2018

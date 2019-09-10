@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                smuggler
-version:             0.1.0
+version:             0.2.0.0
 synopsis:            GHC Source Plugin that helps to manage imports
 description:
     == Usage
@@ -15,11 +15,11 @@ license:             MPL-2.0
 license-file:        LICENSE
 author:              Dmitrii Kovanikov, Veronika Romashkina
 maintainer:          Kowainik <xrom.xkov@gmail.com>
-copyright:           2018 Kowainik
+copyright:           2018-2019 Kowainik
 category:            Development, Refactoring
 build-type:          Simple
 extra-doc-files:     README.md
-                   , CHANGELOG.md
+                     CHANGELOG.md
 tested-with:         GHC == 8.6.5
 
 source-repository head
@@ -36,6 +36,7 @@ common common-options
                        -Wredundant-constraints
                        -fhide-source-paths
 
+  default-language:    Haskell2010
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
                        InstanceSigs
@@ -46,7 +47,6 @@ common common-options
                        StandaloneDeriving
                        TypeApplications
 
-  default-language:    Haskell2010
 
 library
   import:              common-options
@@ -63,11 +63,10 @@ library
                      , containers >= 0.5 && < 0.7
                      , filepath ^>= 1.4
                      , ghc ^>= 8.6.0
-                     , ghc-exactprint ^>= 0.5.8.0
-                     , hash-store ^>= 0.1.0
+                     , ghc-exactprint ^>= 0.6
                      , unordered-containers ^>= 0.2.7
 
-                       -- Debug dependencies; in separate section to easy comment before release
+                     -- Debug dependencies; in separate section to comment easily before release
 --                      , fmt
 --                      , pretty-simple
 --                      , text
