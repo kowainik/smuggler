@@ -116,7 +116,7 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     getEndColMax u = listMax $ map (findColLoc . nameSrcSpan) u
 
     findColLoc :: SrcSpan -> Int
-    findColLoc (RealSrcSpan l)   =  srcSpanEndCol l
+    findColLoc (RealSrcSpan l)   = srcSpanEndCol l
     findColLoc (UnhelpfulSpan _) = defaultCol
 
 listMax :: [Int] -> Int
