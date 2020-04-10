@@ -23,7 +23,16 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
-Lovely addition to this package is that it automatically supports on-the-fly
+If you want to generate a new source file rather than replacing the original
+then also add an additional compiler option:
+
+```
+-fplugins-opt=Smuggler.Plugin:new
+```
+say.  This will create  new output files with the given suffix
+ (`.new`, in this case).
+
+A lovely addition to this package is that it automatically supports on-the-fly
 feature if you use it with `ghcid`. Smuggler doesn't perform file changes when
 there are no unused imports. So you can just run `ghcid` as usual:
 
@@ -31,11 +40,21 @@ there are no unused imports. So you can just run `ghcid` as usual:
 ghcid --command='cabal repl'
 ```
 
+## Caveats
+`smuggler` does not remove imports completely because an import may be being
+used to only import instances of typeclasses, So it will leave stubs like
+
+```haskell
+import Mod ()
+```
+
+that you may need to remove manually.
+
 ## For contributors
 
 Requirements:
 
-* `ghc-8.6.5`
+* `ghc-8.8.3`
 * `cabal >= 3.0` or `stack >= 2.0`
 
 ### Cabal: How to build?

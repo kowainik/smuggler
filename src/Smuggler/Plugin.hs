@@ -5,7 +5,9 @@ module Smuggler.Plugin
 import Control.Monad (guard)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.List (foldl')
+
 import Language.Haskell.GHC.ExactPrint (exactPrint)
+
 import System.FilePath ((-<.>))
 
 import HscTypes (ModSummary (..))
@@ -13,25 +15,31 @@ import HsExtension (GhcRn)
 import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
 import Name (Name, nameSrcSpan)
-import Plugins (CommandLineOption, Plugin (..), defaultPlugin)
+import Plugins (CommandLineOption, Plugin (..), PluginRecompile (..), defaultPlugin)
 import PrelNames (pRELUDE_NAME)
 import RdrName (GlobalRdrElt)
 import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (..), SrcSpan (..), srcSpanEndCol, srcSpanEndLine, srcSpanStartCol,
-               srcSpanStartLine, unLoc)
+import SrcLoc (GenLocated (L), SrcSpan (..), srcSpanEndCol, srcSpanStartCol, srcSpanStartLine,
+               unLoc)
 import TcRnTypes (TcGblEnv (..), TcM)
 
 import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
 import Smuggler.Parser (runParser)
 
-import qualified Data.ByteString as BS
+import qualified Data.ByteString as BS (readFile)
 
 
 plugin :: Plugin
-plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin }
+plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin,
+                         pluginRecompile = smugglerRecompile }
 
 defaultCol :: Int
 defaultCol = 120
+
+-- TODO: would it be worth computing a fingerprint to force recompile if
+-- imports were removed?
+smugglerRecompile :: [CommandLineOption] -> IO PluginRecompile
+smugglerRecompile _ = return NoForceRecompile
 
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin clis modSummary tcEnv = do
@@ -79,11 +87,16 @@ unusedLocs (L (RealSrcSpan loc) decl, used, unused)
     , pRELUDE_NAME == unLoc (ideclName decl)
     = []
 
+{-
+    This is is not always correct, because instances may be imported
+    as in first case above
+
     -- Nothing used; drop entire decl
     | null used = [ (lineNum, colNum)
                   | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
                   , colNum <-  [srcSpanStartCol loc .. getEndColMax unused]
                   ]
+-}
 
     -- Everything imported is used; drop nothing
     | null unused = []

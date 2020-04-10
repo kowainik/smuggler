@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Smuggler.Import
        ( Import (..)
@@ -82,7 +80,7 @@ getLocationMap :: (Eq name) => HsModule name -> HashMap (Import name) SrcSpan
 getLocationMap HsModule{..} =  HashMap.fromList $ fromDecls hsmodImports
   where
     fromDecls :: [LImportDecl name] -> [(Import name, SrcSpan)]
-    fromDecls lidecls = map toImportPairs $ zip lidecls [0..]
+    fromDecls lidecls =  zipWith (curry toImportPairs) lidecls [0 .. ]
 
     toImportPairs :: (LImportDecl name, Int) -> (Import name, SrcSpan)
     toImportPairs (L l impDecl, i) = (toMyImport impDecl i, l)
