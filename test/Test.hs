@@ -20,6 +20,7 @@ main = do
     putStrLn "Cleaning tests"
     for_ testFiles removeFile
 
+    -- TODO: redundant?
     -- clean up .smuggler/ cache directory
     cacheDirExists <- doesDirectoryExist ".smuggler"
     when cacheDirExists $ do

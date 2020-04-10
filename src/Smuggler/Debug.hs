@@ -3,18 +3,28 @@
 {-# LANGUAGE TypeApplications    #-}
 
 module Smuggler.Debug
-       ( debugAST
-       ) where
+  ( debugAST
+  )
+where
 
-import Data.Proxy (Proxy (..))
-import Data.Text (Text)
-import Data.Text.Lazy (toStrict)
-import Data.Typeable (Typeable, typeRep)
-import Fmt (fmt, padLeftF)
-import Text.Pretty.Simple (pShow)
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Text                      ( Text )
+import           Data.Text.Lazy                 ( toStrict )
+import           Data.Typeable                  ( Typeable
+                                                , typeRep
+                                                )
+import           Fmt                            ( fmt
+                                                , padLeftF
+                                                )
+import           Text.Pretty.Simple             ( pShow )
+import qualified Data.Text                     as T
+                                                ( lines
+                                                , pack
+                                                , unlines
+                                                )
+import qualified Data.Text.IO                  as T
+                                                ( putStrLn )
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
 
 -- | Helper function to debug different parts of AST processing.
 {-# WARNING debugAST "'debugAST' remains in code" #-}

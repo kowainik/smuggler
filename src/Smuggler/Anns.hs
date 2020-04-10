@@ -1,15 +1,32 @@
 module Smuggler.Anns
-       ( removeAnnAtLoc
-       , removeTrailingCommas
-       ) where
+  ( removeAnnAtLoc
+  , removeTrailingCommas
+  )
+where
 
-import Data.List (groupBy)
-import Language.Haskell.GHC.ExactPrint (AnnKey (..), Annotation (..), Anns)
-import Language.Haskell.GHC.ExactPrint.Types (AnnConName (..), DeltaPos, KeywordId (..))
-import SrcLoc (SrcSpan (RealSrcSpan), srcSpanStartCol, srcSpanStartLine, srcSpanEndLine)
+import           Data.List                      ( groupBy )
+import qualified Data.Map.Strict               as Map
+                                                ( filterWithKey
+                                                , fromList
+                                                , toList
+                                                )
+import qualified GHC                            ( AnnKeywordId(AnnComma) )
+import           Language.Haskell.GHC.ExactPrint
+                                                ( AnnKey(..)
+                                                , Annotation(..)
+                                                , Anns
+                                                )
+import           Language.Haskell.GHC.ExactPrint.Types
+                                                ( AnnConName(..)
+                                                , DeltaPos
+                                                , KeywordId(..)
+                                                )
+import           SrcLoc                         ( SrcSpan(RealSrcSpan)
+                                                , srcSpanEndLine
+                                                , srcSpanStartCol
+                                                , srcSpanStartLine
+                                                )
 
-import qualified Data.Map.Strict as Map
-import qualified GHC
 
 removeAnnAtLoc :: Int -> Int -> Anns -> Anns
 removeAnnAtLoc line col = Map.filterWithKey (\k _ -> matchKey k)
@@ -40,11 +57,11 @@ removeTrailingCommas
 
     isImportDecl :: (AnnKey, Annotation) -> Bool
     isImportDecl (AnnKey _ (CN "ImportDecl"), _) = True
-    isImportDecl _ = False
+    isImportDecl _                               = False
 
     isTrailingComma :: (KeywordId, DeltaPos) -> Bool
     isTrailingComma (G GHC.AnnComma, _) = True
-    isTrailingComma _ = False
+    isTrailingComma _                   = False
 
     withinSrcSpan :: (AnnKey, Annotation) -> (AnnKey, Annotation) -> Bool
     withinSrcSpan (AnnKey (RealSrcSpan x) _, _) (AnnKey (RealSrcSpan y) _, _)

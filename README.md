@@ -23,14 +23,14 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
-If you want to generate a new source file rather than replacing the original
+If you want to generate a source files rather than replacing the originals
 then also add an additional compiler option:
 
 ```
 -fplugins-opt=Smuggler.Plugin:new
 ```
-say.  This will create  new output files with the given suffix
- (`.new`, in this case).
+say.  This will create output files with the given suffix
+ (`.new`, in this case) rather the rewriting the originals.
 
 A lovely addition to this package is that it automatically supports on-the-fly
 feature if you use it with `ghcid`. Smuggler doesn't perform file changes when
@@ -62,6 +62,12 @@ Requirements:
 ```shell
 cabal update
 cabal build
+```
+
+To build with debugging:
+
+```shell
+cabal bulid -fdebug
 ```
 
 #### Stack: How to build?

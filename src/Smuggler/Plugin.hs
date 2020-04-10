@@ -1,32 +1,57 @@
 module Smuggler.Plugin
-       ( plugin
-       ) where
+  ( plugin
+  )
+where
 
-import Control.Monad (guard)
-import Control.Monad.IO.Class (MonadIO (..))
-import Data.List (foldl')
+import           Control.Monad                  ( guard )
+import           Control.Monad.IO.Class         ( MonadIO(..) )
+import           Data.List                      ( foldl' )
 
-import Language.Haskell.GHC.ExactPrint (exactPrint)
+import           Language.Haskell.GHC.ExactPrint
+                                                ( exactPrint )
 
-import System.FilePath ((-<.>))
+import           System.FilePath                ( (-<.>) )
 
-import HscTypes (ModSummary (..))
-import HsExtension (GhcRn)
-import HsImpExp (IE (..), IEWrappedName (..), ImportDecl (..), LIE, LIEWrappedName)
-import IOEnv (readMutVar)
-import Name (Name, nameSrcSpan)
-import Plugins (CommandLineOption, Plugin (..), PluginRecompile (..), defaultPlugin)
-import PrelNames (pRELUDE_NAME)
-import RdrName (GlobalRdrElt)
-import RnNames (ImportDeclUsage, findImportUsage)
-import SrcLoc (GenLocated (L), SrcSpan (..), srcSpanEndCol, srcSpanStartCol, srcSpanStartLine,
-               unLoc)
-import TcRnTypes (TcGblEnv (..), TcM)
+import           HscTypes                       ( ModSummary(..) )
+import           HsExtension                    ( GhcRn )
+import           HsImpExp                       ( IE(..)
+                                                , IEWrappedName(..)
+                                                , ImportDecl(..)
+                                                , LIE
+                                                , LIEWrappedName
+                                                )
+import           IOEnv                          ( readMutVar )
+import           Name                           ( Name
+                                                , nameSrcSpan
+                                                )
+import           Plugins                        ( CommandLineOption
+                                                , Plugin(..)
+                                                , PluginRecompile(..)
+                                                , defaultPlugin
+                                                )
+import           PrelNames                      ( pRELUDE_NAME )
+import           RdrName                        ( GlobalRdrElt )
+import           RnNames                        ( ImportDeclUsage
+                                                , findImportUsage
+                                                )
+import           SrcLoc                         ( GenLocated(L)
+                                                , SrcSpan(..)
+                                                , srcSpanEndCol
+                                                , srcSpanStartCol
+                                                , srcSpanStartLine
+                                                , unLoc
+                                                )
+import           TcRnTypes                      ( TcGblEnv(..)
+                                                , TcM
+                                                )
 
-import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
-import Smuggler.Parser (runParser)
+import           Smuggler.Anns                  ( removeAnnAtLoc
+                                                , removeTrailingCommas
+                                                )
+import           Smuggler.Parser                ( runParser )
 
-import qualified Data.ByteString as BS (readFile)
+import qualified Data.ByteString               as BS
+                                                ( readFile )
 
 
 plugin :: Plugin
