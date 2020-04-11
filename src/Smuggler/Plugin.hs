@@ -6,12 +6,9 @@ where
 import           Control.Monad                  ( guard )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.List                      ( foldl' )
-
-import           Language.Haskell.GHC.ExactPrint
-                                                ( exactPrint )
-
-import           System.FilePath                ( (-<.>) )
-
+import           GHC.IO.Encoding                ( setLocaleEncoding
+                                                , utf8
+                                                )
 import           HscTypes                       ( ModSummary(..) )
 import           HsExtension                    ( GhcRn )
 import           HsImpExp                       ( IE(..)
@@ -21,6 +18,8 @@ import           HsImpExp                       ( IE(..)
                                                 , LIEWrappedName
                                                 )
 import           IOEnv                          ( readMutVar )
+import           Language.Haskell.GHC.ExactPrint
+                                                ( exactPrint )
 import           Name                           ( Name
                                                 , nameSrcSpan
                                                 )
@@ -34,6 +33,10 @@ import           RdrName                        ( GlobalRdrElt )
 import           RnNames                        ( ImportDeclUsage
                                                 , findImportUsage
                                                 )
+import           Smuggler.Anns                  ( removeAnnAtLoc
+                                                , removeTrailingCommas
+                                                )
+import           Smuggler.Parser                ( runParser )
 import           SrcLoc                         ( GenLocated(L)
                                                 , SrcSpan(..)
                                                 , srcSpanEndCol
@@ -41,18 +44,10 @@ import           SrcLoc                         ( GenLocated(L)
                                                 , srcSpanStartLine
                                                 , unLoc
                                                 )
+import           System.FilePath                ( (-<.>) )
 import           TcRnTypes                      ( TcGblEnv(..)
                                                 , TcM
                                                 )
-
-import           Smuggler.Anns                  ( removeAnnAtLoc
-                                                , removeTrailingCommas
-                                                )
-import           Smuggler.Parser                ( runParser )
-
-import qualified Data.ByteString               as BS
-                                                ( readFile )
-
 
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin,
@@ -74,8 +69,9 @@ smugglerPlugin clis modSummary tcEnv = do
   where
     smuggling :: [GlobalRdrElt] -> FilePath -> IO ()
     smuggling uses modulePath = do
-        -- 0. Read file content as a raw ByteString
-        fileContents <- BS.readFile modulePath
+        -- 0. Read file content as a UTF-8 string (GHC accepts only ASCII or UTF-8)
+        setLocaleEncoding utf8
+        fileContents <- readFile modulePath
 
         -- 1. Parse given file
         runParser modulePath fileContents >>= \case

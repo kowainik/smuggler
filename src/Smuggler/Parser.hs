@@ -3,8 +3,6 @@ module Smuggler.Parser
   )
 where
 
-import           Data.ByteString                ( ByteString )
-import           Data.ByteString.Char8          ( unpack )
 import           Language.Haskell.GHC.ExactPrint
                                                 ( Anns )
 import           Language.Haskell.GHC.ExactPrint.Parsers
@@ -15,9 +13,9 @@ import           SrcLoc                         ( Located )
 
 
 runParser
-  :: FilePath -> ByteString -> IO (Either () (Anns, Located (HsModule GhcPs)))
+  :: FilePath -> String -> IO (Either () (Anns, Located (HsModule GhcPs)))
 runParser fileName fileContents = do
-  res <- parseModuleFromString fileName (unpack fileContents)
+  res <- parseModuleFromString fileName fileContents
   pure $ case res of
     Left  (_srcSpan, _str) -> Left ()
     Right x                -> Right x
