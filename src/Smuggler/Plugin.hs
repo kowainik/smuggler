@@ -17,9 +17,7 @@ import HsSyn (GhcPs, GhcRn, HsModule (hsmodExports),
               ImportDecl (ideclHiding, ideclImplicit, ideclName), LIE, LIEWrappedName)
 import IOEnv (readMutVar)
 import Language.Haskell.GHC.ExactPrint (Anns, exactPrint)
-import Language.Haskell.GHC.ExactPrint.Transform (Transform, runTransform)
-import Language.Haskell.GHC.ExactPrint.Types ()
-import Language.Haskell.GHC.ExactPrint.Utils ()
+import Language.Haskell.GHC.ExactPrint.Transform (runTransform, addTrailingCommaT)
 import Name (Name, nameSrcSpan)
 import Outputable (Outputable (ppr), showSDoc)
 import Plugins (CommandLineOption, Plugin (..), PluginRecompile (..), defaultPlugin)
@@ -62,24 +60,19 @@ smugglerPlugin clis modSummary tcEnv = do
     -> [AvailInfo]
     -> (Anns, Located (HsModule GhcPs))
     -> (Anns, Located (HsModule GhcPs))
-  addExplicitExports dflags exports (anns, L astLoc hsMod) = do
-    let (ast, (anns', _), s') = runTransform anns $ do
+  addExplicitExports dflags exports (anns, L astLoc hsMod) = (anns', ast')
+   where
+    (ast', (anns', _n), _s) = runTransform anns $ do
 
-          let names = mkNamesFromAvailInfos exports
-          exportsList <- mapM mkIEVarFromNameT names
+      let names = mkNamesFromAvailInfos exports
+      exportsList <- mapM mkIEVarFromNameT names
 
-          let annotate :: Transform (Located (HsModule GhcPs))
-              annotate = do
-                let lExportsList = L astLoc exportsList
-                    hsMod' = hsMod { hsmodExports = Just lExportsList }
-                addParensT lExportsList
-                mapM_ addExportDeclAnnT exportsList
-                unless (null exportsList) $ mapM_ addCommaT (init exportsList)
-                return (L astLoc hsMod')
-
-          annotate
-
-    (anns', ast)
+      let lExportsList = L astLoc exportsList
+          hsMod'       = hsMod { hsmodExports = Just lExportsList }
+      addParensT lExportsList
+      mapM_ addExportDeclAnnT exportsList
+      unless (null exportsList) $ mapM_ addCommaT (init exportsList)
+      return (L astLoc hsMod')
 
   smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()
   smuggling dflags uses modulePath = do

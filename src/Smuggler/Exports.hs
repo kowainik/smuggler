@@ -16,13 +16,18 @@ mkNamesFromAvailInfos = concatMap availNames -- there are also other choices
 
 mkIEVarFromNameT :: Monad m => Name -> TransformT m (Located (IE GhcPs))
 mkIEVarFromNameT name = do
-  loc <- uniqueSrcSpanT
+  locIEVar <- uniqueSrcSpanT
+  locIEName <- uniqueSrcSpanT
+  locUnqual <- uniqueSrcSpanT
   return $
     L
-      loc
+      locIEVar
       ( IEVar
           noExt
-          (L loc (IEName (L loc (mkVarUnqual ((occNameFS . occName) name)))))
+          ( L
+              locIEName
+              (IEName (L locUnqual (mkVarUnqual ((occNameFS . occName) name))))
+          )
       )
 
 addExportDeclAnnT :: Monad m => Located (IE GhcPs) -> TransformT m ()
