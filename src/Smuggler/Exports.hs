@@ -1,25 +1,17 @@
 module Smuggler.Exports where
 
-import           GHC                            ( AnnKeywordId(..)
-                                                , IEWrappedName(..)
-                                                , Name
-                                                , Located
-                                                , GenLocated(..)
-                                                , IE(..)
-                                                )
-import           Language.Haskell.GHC.ExactPrint.Transform
-import           RdrName
-import           OccName
-import           Language.Haskell.GHC.ExactPrint.Types
+import Avail (AvailInfo, availNames)
+import Debug.Trace (traceM)
+import GHC (AnnKeywordId (..), GenLocated (..), IE (..), IEWrappedName (..), Located, Name)
+import Language.Haskell.GHC.ExactPrint.Transform (TransformT, addSimpleAnnT, uniqueSrcSpanT)
+import Language.Haskell.GHC.ExactPrint.Types (DeltaPos (DP), GhcPs, KeywordId (G), noExt)
+import OccName (HasOccName (occName), OccName (occNameFS))
+import RdrName (mkVarUnqual)
 
-import           Avail
 
-import Debug.Trace
 
 -- See https://www.machinesung.com/scribbles/terser-import-declarations.html
 -- and https://www.machinesung.com/scribbles/ghc-api.html
-
-
 
 mkNamesFromAvailInfos :: [AvailInfo] -> [Name]
 mkNamesFromAvailInfos = concatMap availNames -- there are also other choices
@@ -39,5 +31,10 @@ addExportDeclAnnT (L _ (IEVar _ (L _ (IEName x)))) =
   addSimpleAnnT x (DP (1, 2)) [(G AnnVal, DP (0, 0))]
 
 addCommaT :: Monad m => Located (IE GhcPs) -> TransformT m ()
-addCommaT x@(L _ (IEVar _ (L _ (IEName _)))) =
-  addSimpleAnnT x (DP (0, 0)) [(G AnnComma, DP (0, 0))]
+addCommaT x = addSimpleAnnT x (DP (0, 0)) [(G AnnComma, DP (0, 0))]
+
+addParensT :: Monad m => Located [Located (IE GhcPs)] -> TransformT m ()
+addParensT x = addSimpleAnnT
+  x
+  (DP (0, 1))
+  [(G AnnOpenP, DP (0, 0)), (G AnnCloseP, DP (0, 1))]

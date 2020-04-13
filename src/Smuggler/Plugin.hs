@@ -3,72 +3,43 @@ module Smuggler.Plugin
   )
 where
 
-import           Control.Monad                  ( guard )
-import           Control.Monad.IO.Class         ( MonadIO(..) )
-import           Data.List                      ( foldl' )
-import           GHC.IO.Encoding                ( setLocaleEncoding
-                                                , utf8
-                                                )
-import           HscTypes                       ( ModSummary(..) )
-import           HsExtension                    ( GhcRn )
-import           HsImpExp                       ( IE(..)
-                                                , IEWrappedName(..)
-                                                , ImportDecl(..)
-                                                , LIE
-                                                , LIEWrappedName
-                                                )
-import           IOEnv                          ( readMutVar )
-import           Language.Haskell.GHC.ExactPrint
-                                                ( exactPrint
-                                                , Anns (..)
-                                                , uniqueSrcSpanT
-                                                , addAnnotationsForPretty
-                                                , addSimpleAnnT
-                                                , runTransform )
-import           Name                           ( Name
-                                                , nameSrcSpan
-                                                )
-import           Plugins                        ( CommandLineOption
-                                                , Plugin(..)
-                                                , PluginRecompile(..)
-                                                , defaultPlugin
-                                                )
-import           PrelNames                      ( pRELUDE_NAME )
-import           RdrName                        ( GlobalRdrElt , isLocalGRE, gresToAvailInfo)
-import           RnNames                        ( ImportDeclUsage
-                                                , findImportUsage
-                                                )
-import           Smuggler.Anns                  ( removeAnnAtLoc
-                                                , removeTrailingCommas
-                                                )
-import           Smuggler.Parser                ( runParser )
-import           SrcLoc                         ( GenLocated(L)
-                                                , noLoc
-                                                , Located
-                                                , SrcSpan(..)
-                                                , srcSpanEndCol
-                                                , srcSpanStartCol
-                                                , srcSpanStartLine
-                                                , unLoc
-                                                )
-import           System.FilePath                ( (-<.>) )
-import           TcRnTypes                      ( TcGblEnv(..)
-                                                , TcM
-                                                )
+import ApiAnnotation ()
+import Avail (AvailInfo)
+import Control.Monad (guard)
+import Control.Monad.IO.Class (MonadIO (..))
+import Data.List (foldl')
+import Data.Maybe ()
+import Debug.Trace (traceM)
+import DynFlags (DynFlags, HasDynFlags (getDynFlags))
+import GHC.IO.Encoding (setLocaleEncoding, utf8)
+import HscTypes (ModSummary (..))
+import HsExtension ()
+import HsImpExp ()
+import HsSyn (GhcPs, GhcRn, HsModule (hsmodExports),
+              IE (IEThingAbs, IEThingAll, IEThingWith, IEVar), IEWrappedName (IEName),
+              ImportDecl (ideclHiding, ideclImplicit, ideclName), LIE, LIEWrappedName)
+import IOEnv (readMutVar)
+import Language.Haskell.GHC.ExactPrint (Anns, exactPrint)
+import Language.Haskell.GHC.ExactPrint.Transform (Transform, runTransform)
+import Language.Haskell.GHC.ExactPrint.Types ()
+import Language.Haskell.GHC.ExactPrint.Utils ()
+import Name (Name, nameSrcSpan)
+import Outputable (Outputable (ppr), showSDoc)
+import Plugins (CommandLineOption, Plugin (..), PluginRecompile (..), defaultPlugin)
+import PrelNames (pRELUDE_NAME)
+import RdrName (GlobalRdrElt)
+import RnNames (ImportDeclUsage, findImportUsage)
+import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
+import Smuggler.Exports (addCommaT, addExportDeclAnnT, addParensT, mkIEVarFromNameT,
+                         mkNamesFromAvailInfos)
+import Smuggler.Parser (runParser)
+import SrcLoc (GenLocated (L), Located, SrcSpan (..), srcSpanEndCol, srcSpanStartCol,
+               srcSpanStartLine, unLoc)
+import System.FilePath ((-<.>))
+import TcRnExports ()
+import TcRnTypes (TcGblEnv (..), TcM)
+import Text.Pretty.Simple ()
 
-
-import ApiAnnotation
-import DynFlags
-import Outputable
-import TcRnExports
-import Language.Haskell.GHC.ExactPrint.Types (DeltaPos( DP ) ,  KeywordId( G ))
-import Language.Haskell.GHC.ExactPrint.Utils (showAnnData)
-import           Language.Haskell.GHC.ExactPrint.Transform
-import Avail
-import HsSyn
-import Smuggler.Exports
-import Text.Pretty.Simple
-import Debug.Trace
 
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin,
@@ -106,9 +77,7 @@ smugglerPlugin clis modSummary tcEnv = do
           :: [Located (IE GhcPs)] -> Transform (Located (HsModule GhcPs))
         addExportDecls expl = do
           let hsMod' = hsMod { hsmodExports = Just $ L astLoc expl }
-          addSimpleAnnT (L astLoc expl)
-                        (DP (0, 1))
-                        [(G AnnOpenP, DP (0, 0)), (G AnnCloseP, DP (0, 1))]
+          addParensT (L astLoc expl)
           mapM_ addExportDeclAnnT expl
           mapM_ addCommaT (init expl)
 
@@ -118,7 +87,7 @@ smugglerPlugin clis modSummary tcEnv = do
 
         (ast', (anns'', n'), s') = runTransform anns' (addExportDecls exports')
 
-      
+
       (anns'', ast')
 
     smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()
@@ -131,22 +100,22 @@ smugglerPlugin clis modSummary tcEnv = do
         -- 1. Parse given file
         runParser modulePath fileContents >>= \case
             Left () -> pure ()  -- do nothing if file is invalid Haskell
-            Right (anns, ast@(L astLoc hsMod)) -> do
-              
+            Right (anns, ast@(L _loc hsMod)) -> do
+
                 let allExports = tcg_exports tcEnv
                 putStrLn  $ "AllExports:" ++ showSDoc dflags (ppr allExports)
 
                 -- hsmodExports :: Maybe (Located [LIE pass])
-                let currentExplicitExports = hsmodExports hsMod 
+                let currentExplicitExports = hsmodExports hsMod
                 putStrLn  $ "currentExplicitExports:" ++ showSDoc dflags (ppr currentExplicitExports)
 
-                case currentExplicitExports of
-                 Just _ -> putStrLn "Leave alone"
-                 Nothing -> do
-                              let (anns', ast') = addExports dflags allExports (anns, ast)
-                              putStrLn  $ "ast':" ++ showSDoc dflags (ppr ast')
+                let (anns', ast') = case currentExplicitExports of
+                                      Just _  ->  (anns, ast) -- there is an existing export list
+                                      Nothing -> addExports dflags allExports (anns, ast)
+--
+--                              putStrLn  $ "ast':" ++ showSDoc dflags (ppr ast')
 --                              putStrLn  $ "anns':" ++  showSDoc dflags (ppr anns')
-                              putStrLn $ "exactPrint:\n" ++ exactPrint ast'  anns'
+                putStrLn $ "exactPrint:\n" ++ exactPrint ast'  anns'
                               --putStrLn $ exactPrint ast' (addAnnotationsForPretty [] ast' anns')
 
                 -- 2. find positions of unused imports
