@@ -19,7 +19,12 @@ import           HsImpExp                       ( IE(..)
                                                 )
 import           IOEnv                          ( readMutVar )
 import           Language.Haskell.GHC.ExactPrint
-                                                ( exactPrint )
+                                                ( exactPrint
+                                                , Anns (..)
+                                                , uniqueSrcSpanT
+                                                , addAnnotationsForPretty
+                                                , addSimpleAnnT
+                                                , runTransform )
 import           Name                           ( Name
                                                 , nameSrcSpan
                                                 )
@@ -29,7 +34,7 @@ import           Plugins                        ( CommandLineOption
                                                 , defaultPlugin
                                                 )
 import           PrelNames                      ( pRELUDE_NAME )
-import           RdrName                        ( GlobalRdrElt )
+import           RdrName                        ( GlobalRdrElt , isLocalGRE, gresToAvailInfo)
 import           RnNames                        ( ImportDeclUsage
                                                 , findImportUsage
                                                 )
@@ -38,6 +43,8 @@ import           Smuggler.Anns                  ( removeAnnAtLoc
                                                 )
 import           Smuggler.Parser                ( runParser )
 import           SrcLoc                         ( GenLocated(L)
+                                                , noLoc
+                                                , Located
                                                 , SrcSpan(..)
                                                 , srcSpanEndCol
                                                 , srcSpanStartCol
@@ -48,6 +55,20 @@ import           System.FilePath                ( (-<.>) )
 import           TcRnTypes                      ( TcGblEnv(..)
                                                 , TcM
                                                 )
+
+
+import ApiAnnotation
+import DynFlags
+import Outputable
+import TcRnExports
+import Language.Haskell.GHC.ExactPrint.Types (DeltaPos( DP ) ,  KeywordId( G ))
+import Language.Haskell.GHC.ExactPrint.Utils (showAnnData)
+import           Language.Haskell.GHC.ExactPrint.Transform
+import Avail
+import HsSyn
+import Smuggler.Exports
+import Text.Pretty.Simple
+import Debug.Trace
 
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin,
@@ -63,20 +84,71 @@ smugglerRecompile _ = return NoForceRecompile
 
 smugglerPlugin :: [CommandLineOption] -> ModSummary -> TcGblEnv -> TcM TcGblEnv
 smugglerPlugin clis modSummary tcEnv = do
+    dflags <- getDynFlags
     let modulePath = ms_hspp_file modSummary
     uses <- readMutVar (tcg_used_gres tcEnv)
-    tcEnv <$ liftIO (smuggling uses modulePath)
+    tcEnv <$ liftIO (smuggling dflags uses modulePath)
   where
-    smuggling :: [GlobalRdrElt] -> FilePath -> IO ()
-    smuggling uses modulePath = do
+
+    addExports
+      :: DynFlags
+      -> [AvailInfo]
+      -> (Anns, Located (HsModule GhcPs))
+      -> (Anns, Located (HsModule GhcPs))
+    addExports dflags exports (anns, ast@(L astLoc hsMod)) = do
+      let
+        names = mkNamesFromAvailInfos exports
+        (exports', (anns', n), s) =
+          -- runTransform :: Anns -> Transform a -> (a, (Anns, Int), [String])
+          runTransform anns $ mapM mkIEVarFromNameT names
+
+        addExportDecls
+          :: [Located (IE GhcPs)] -> Transform (Located (HsModule GhcPs))
+        addExportDecls expl = do
+          let hsMod' = hsMod { hsmodExports = Just $ L astLoc expl }
+          addSimpleAnnT (L astLoc expl)
+                        (DP (0, 1))
+                        [(G AnnOpenP, DP (0, 0)), (G AnnCloseP, DP (0, 1))]
+          mapM_ addExportDeclAnnT expl
+          mapM_ addCommaT (init expl)
+
+          traceM $ "astLoc: " ++ show astLoc
+
+          return (L astLoc hsMod')
+
+        (ast', (anns'', n'), s') = runTransform anns' (addExportDecls exports')
+
+      
+      (anns'', ast')
+
+    smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()
+    smuggling dflags uses modulePath = do
         -- 0. Read file content as a UTF-8 string (GHC accepts only ASCII or UTF-8)
+        -- TODO: Use ms_hspp_buf instead, if we have it?
         setLocaleEncoding utf8
         fileContents <- readFile modulePath
 
         -- 1. Parse given file
         runParser modulePath fileContents >>= \case
             Left () -> pure ()  -- do nothing if file is invalid Haskell
-            Right (anns, ast) -> do
+            Right (anns, ast@(L astLoc hsMod)) -> do
+              
+                let allExports = tcg_exports tcEnv
+                putStrLn  $ "AllExports:" ++ showSDoc dflags (ppr allExports)
+
+                -- hsmodExports :: Maybe (Located [LIE pass])
+                let currentExplicitExports = hsmodExports hsMod 
+                putStrLn  $ "currentExplicitExports:" ++ showSDoc dflags (ppr currentExplicitExports)
+
+                case currentExplicitExports of
+                 Just _ -> putStrLn "Leave alone"
+                 Nothing -> do
+                              let (anns', ast') = addExports dflags allExports (anns, ast)
+                              putStrLn  $ "ast':" ++ showSDoc dflags (ppr ast')
+--                              putStrLn  $ "anns':" ++  showSDoc dflags (ppr anns')
+                              putStrLn $ "exactPrint:\n" ++ exactPrint ast'  anns'
+                              --putStrLn $ exactPrint ast' (addAnnotationsForPretty [] ast' anns')
+
                 -- 2. find positions of unused imports
                 let user_imports = filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
                 let usage = findImportUsage user_imports uses

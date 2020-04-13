@@ -59,6 +59,7 @@ library
   hs-source-dirs:  src
   exposed-modules:
     Smuggler.Anns
+    Smuggler.Exports
     Smuggler.Loc
     Smuggler.Parser
     Smuggler.Plugin
@@ -102,24 +103,26 @@ test-suite smuggler-test
   hs-source-dirs: test
   main-is:        Test.hs
   other-modules:
-    Test.BoolBoolUnused
-    Test.BoolBoolUsed
-    Test.BoolPartlyUsedFirst
-    Test.BoolPartlyUsedLast
-    Test.ConstructorsUnused
-    Test.Dummy
-    Test.ImplicitImportUnused
-    Test.ImplicitImportUsed
-    Test.ImportEmpty
-    Test.MultilineUnused
-    Test.TypeConstructorUnused
-    Test.TypeConstructorUnusedComma
-    Test.TypeConstructorUsed
-    Test.TypeUnused
-    Test.TypeUsed
-    Test.WildcardUnused
-    Test.WildcardUsed
+--    Test.BoolBoolUnused
+--    Test.BoolBoolUsed
+--    Test.BoolPartlyUsedFirst
+--    Test.BoolPartlyUsedLast
+--    Test.ConstructorsUnused
+--    Test.Dummy
+    Test.ExportExplicit
+    Test.ExportImplicit
+--    Test.ImplicitImportUnused
+--    Test.ImplicitImportUsed
+--    Test.ImportEmpty
+--    Test.MultilineUnused
+--    Test.TypeConstructorUnused
+--    Test.TypeConstructorUnusedComma
+--    Test.TypeConstructorUsed
+--    Test.TypeUnused
+--    Test.TypeUsed
+--    Test.WildcardUnused
 
+--
   build-depends:
     , ansi-terminal
     , directory
