@@ -63,23 +63,23 @@ smugglerPlugin clis modSummary tcEnv = do
     -> (Anns, Located (HsModule GhcPs))
     -> (Anns, Located (HsModule GhcPs))
   addExplicitExports dflags exports (anns, L astLoc hsMod) = do
-    let names = mkNamesFromAvailInfos exports
+    let (ast, (anns', _), s') = runTransform anns $ do
 
-        (exportsList, (anns', _n), _s) =
-          runTransform anns $ mapM mkIEVarFromNameT names
+          let names = mkNamesFromAvailInfos exports
+          exportsList <- mapM mkIEVarFromNameT names
 
-        annotate :: Transform (Located (HsModule GhcPs))
-        annotate = do
-          let lExportsList = L astLoc exportsList
-              hsMod' = hsMod { hsmodExports = Just lExportsList }
-          addParensT lExportsList
-          mapM_ addExportDeclAnnT exportsList
-          unless (null exportsList) $ mapM_ addCommaT (init exportsList)
-          return (L astLoc hsMod')
+          let annotate :: Transform (Located (HsModule GhcPs))
+              annotate = do
+                let lExportsList = L astLoc exportsList
+                    hsMod' = hsMod { hsmodExports = Just lExportsList }
+                addParensT lExportsList
+                mapM_ addExportDeclAnnT exportsList
+                unless (null exportsList) $ mapM_ addCommaT (init exportsList)
+                return (L astLoc hsMod')
 
-        (ast, (anns'', _n'), _s') = runTransform anns' annotate
+          annotate
 
-    (anns'', ast)
+    (anns', ast)
 
   smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()
   smuggling dflags uses modulePath = do
@@ -106,6 +106,8 @@ smugglerPlugin clis modSummary tcEnv = do
               Just _ -> (anns, ast) -- there is an existing export export list
               Nothing ->
                 addExplicitExports dflags allExports (anns, ast)
+
+        putStrLn $ exactPrint ast' anns'
 
         -- IMPORTS
 
