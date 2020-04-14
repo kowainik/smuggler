@@ -5,7 +5,7 @@ import           Plugins
 
 data ImportAction = NoImportProcessing | PreserveInstanceImports | MinimiseImports
 
-data ExportAction = NoExportProcessing | ExplicitExports | ReplaceExports
+data ExportAction = NoExportProcessing | AddExplicitExports | ReplaceExports
 
 data Options
   = Options
@@ -15,7 +15,7 @@ data Options
       }
 
 defaultOptions :: Options
-defaultOptions = Options PreserveInstanceImports ExplicitExports Nothing
+defaultOptions = Options PreserveInstanceImports AddExplicitExports Nothing
 
 parseCommandLineOption :: Options -> CommandLineOption -> Options
 parseCommandLineOption opts clo = case toLower <$> clo of
@@ -23,7 +23,7 @@ parseCommandLineOption opts clo = case toLower <$> clo of
   "preserveinstanceimports" -> opts { importAction = PreserveInstanceImports }
   "minimiseimports"         -> opts { importAction = MinimiseImports }
   "noexportprocessing"      -> opts { exportAction = NoExportProcessing }
-  "explicitexports"         -> opts { exportAction = ExplicitExports }
+  "addexplicitexports"      -> opts { exportAction = AddExplicitExports }
   "replaceexports"          -> opts { exportAction = ReplaceExports }
   suffix                    -> opts { newSuffix = Just suffix }
 

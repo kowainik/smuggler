@@ -12,7 +12,7 @@
 >
 > ― Amara Lakhous, Clash of Civilizations Over an Elevator in Piazza Vittorio
 
-Haskell Source Plugin which removes unused imports automatically.
+Haskell Source Plugin which removes unused imports and adds explicit exports automatically.
 
 ## How to use
 
@@ -23,14 +23,25 @@ compiler options:
 -fplugin=Smuggler.Plugin
 ```
 
-If you want to generate a source files rather than replacing the originals
-then also add an additional compiler option:
+The Plugin has serveral (case-inseneitive) options:
 
+* `NoImportProcessing` - do no import processing
+* `PreserveInstanceImports` - remove unused imports, but preserve a library import stub.
+such as  `import Mod ()`, to import only instances of typeclasses from it.
+* `MinimiseImports` - remove unused imports, including any that may be needed to
+import typeclass instances.  This may, therefore, stop the module from compiling.
+* `NoExportProcessing` - do no export processing
+* `AddExplicitExports` - add an explicit list of all available exports if there is none.
+You may want to edit it to keep specific values, types or classes local to the module.
+* `ReplaceExports` - replace any existing module export list with one containing all
+available exports (which you can, of course, then prune to your requirements).
+
+Any other option value is used to generate a source file with the option value used as a suffix
+rather than replacing the original file. For example,
 ```
 -fplugins-opt=Smuggler.Plugin:new
 ```
-say.  This will create output files with the given suffix
- (`.new`, in this case) rather the rewriting the originals.
+will create output files with the `.new` suffix rather the overwriting the originals.
 
 A lovely addition to this package is that it automatically supports on-the-fly
 feature if you use it with `ghcid`. Smuggler doesn't perform file changes when
