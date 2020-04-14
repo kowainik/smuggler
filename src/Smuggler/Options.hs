@@ -1,6 +1,11 @@
-module Smuggler.Options (Options (..), parseCommandLineOptions)where
+module Smuggler.Options
+  ( Options(..)
+  , parseCommandLineOptions
+  )
+where
 
-import Data.Char (toLower)
+import           Data.List                      ( foldl' )
+import           Data.Char                      ( toLower )
 import           Plugins
 
 data ImportAction = NoImportProcessing | PreserveInstanceImports | MinimiseImports

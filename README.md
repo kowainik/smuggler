@@ -31,8 +31,11 @@ such as  `import Mod ()`, to import only instances of typeclasses from it.
 * `MinimiseImports` - remove unused imports, including any that may be needed to
 import typeclass instances.  This may, therefore, stop the module from compiling.
 * `NoExportProcessing` - do no export processing
-* `AddExplicitExports` - add an explicit list of all available exports if there is none.
+* `AddExplicitExports` - add an explicit list of all available exports (excluding
+those that are imported) if there is no existing export list.
 You may want to edit it to keep specific values, types or classes local to the module.
+At present, a typeclass and its class methods are exported individually.  You may want to
+replace those exports with an abbreviation such as `C(..).
 * `ReplaceExports` - replace any existing module export list with one containing all
 available exports (which you can, of course, then prune to your requirements).
 
