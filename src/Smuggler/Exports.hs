@@ -1,6 +1,6 @@
 module Smuggler.Exports where
 
-import Avail (AvailInfo, availNames)
+import Avail (AvailInfo, availNamesWithSelectors)
 import Debug.Trace (traceM)
 import GHC (AnnKeywordId (..), GenLocated (..), IE (..), IEWrappedName (..), Located, Name)
 import Language.Haskell.GHC.ExactPrint.Transform (TransformT, addSimpleAnnT, uniqueSrcSpanT)
@@ -12,7 +12,9 @@ import RdrName (mkVarUnqual)
 -- and https://www.machinesung.com/scribbles/ghc-api.html
 
 mkNamesFromAvailInfos :: [AvailInfo] -> [Name]
-mkNamesFromAvailInfos = concatMap availNames -- there are also other choices
+mkNamesFromAvailInfos = concatMap availNamesWithSelectors
+--Produces all  names made available by the availability information (including overloaded selectors)
+--To exclude overloaded selector use availNames
 
 mkIEVarFromNameT :: Monad m => Name -> TransformT m (Located (IE GhcPs))
 mkIEVarFromNameT name = do
