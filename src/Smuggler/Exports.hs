@@ -16,6 +16,8 @@ mkNamesFromAvailInfos = concatMap availNames -- there are also other choices
 
 mkIEVarFromNameT :: Monad m => Name -> TransformT m (Located (IE GhcPs))
 mkIEVarFromNameT name = do
+  -- Could use only one loc as it would be used on different constructors
+  -- and not, therefore, get overwritten on subsequent uses.
   locIEVar <- uniqueSrcSpanT
   locIEName <- uniqueSrcSpanT
   locUnqual <- uniqueSrcSpanT

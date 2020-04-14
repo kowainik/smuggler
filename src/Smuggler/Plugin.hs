@@ -65,13 +65,15 @@ smugglerPlugin clis modSummary tcEnv = do
     (ast', (anns', _n), _s) = runTransform anns $ do
 
       let names = mkNamesFromAvailInfos exports
+
       exportsList <- mapM mkIEVarFromNameT names
+      mapM_ addExportDeclAnnT exportsList
+      unless (null exportsList) $ mapM_ addCommaT (init exportsList)
 
       let lExportsList = L astLoc exportsList
           hsMod'       = hsMod { hsmodExports = Just lExportsList }
       addParensT lExportsList
-      mapM_ addExportDeclAnnT exportsList
-      unless (null exportsList) $ mapM_ addCommaT (init exportsList)
+
       return (L astLoc hsMod')
 
   smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()

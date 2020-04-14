@@ -61,6 +61,7 @@ library
     Smuggler.Anns
     Smuggler.Exports
     Smuggler.Loc
+    Smuggler.Options
     Smuggler.Parser
     Smuggler.Plugin
 
