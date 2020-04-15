@@ -1,4 +1,4 @@
-module Smuggler.Exports where
+module Smuggler.Export where
 
 import Avail (AvailInfo, availNamesWithSelectors)
 import Debug.Trace (traceM)

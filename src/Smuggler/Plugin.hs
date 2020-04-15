@@ -4,42 +4,46 @@ module Smuggler.Plugin
   )
 where
 
-import Avail (AvailInfo)
-import Control.Monad (guard, unless)
-import Control.Monad.IO.Class (MonadIO (..))
-import Data.List (foldl')
-import Debug.Trace (traceM)
-import DynFlags (DynFlags, HasDynFlags (getDynFlags))
-import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import HscTypes (ModSummary (..))
-import HsSyn (GhcPs, GhcRn, HsModule (hsmodExports),
-              IE (IEThingAbs, IEThingAll, IEThingWith, IEVar), IEWrappedName (IEName),
-              ImportDecl (ideclHiding, ideclImplicit, ideclName), LIE, LIEWrappedName)
-import IOEnv (readMutVar)
-import Language.Haskell.GHC.ExactPrint (Anns, exactPrint)
-import Language.Haskell.GHC.ExactPrint.Transform (runTransform, addTrailingCommaT)
-import Name (Name, nameSrcSpan)
-import Outputable (Outputable (ppr), showSDoc)
-import Plugins (CommandLineOption, Plugin (..), PluginRecompile (..), defaultPlugin)
-import PrelNames (pRELUDE_NAME)
-import RdrName (GlobalRdrElt)
-import RnNames (ImportDeclUsage, findImportUsage)
-import Smuggler.Anns (removeAnnAtLoc, removeTrailingCommas)
-import Smuggler.Exports (addCommaT, addExportDeclAnnT, addParensT, mkIEVarFromNameT,
-                         mkNamesFromAvailInfos)
-import Smuggler.Parser (runParser)
-import SrcLoc (GenLocated (L), Located, SrcSpan (..), srcSpanEndCol, srcSpanStartCol,
-               srcSpanStartLine, unLoc)
-import System.FilePath ((-<.>))
-import TcRnTypes (TcGblEnv (..), TcM)
+import Avail ( AvailInfo )
+import Control.Monad ( unless )
+import Control.Monad.IO.Class ( MonadIO(..) )
+import Data.List ( foldl' )
+import Debug.Trace ()
+import DynFlags ( DynFlags, HasDynFlags(getDynFlags) )
+import GHC.IO.Encoding ( setLocaleEncoding, utf8 )
+import HscTypes ( ModSummary(..) )
+import HsSyn
+    ( GhcPs, ImportDecl(ideclImplicit), HsModule(hsmodExports) )
+import IOEnv ( readMutVar )
+import Language.Haskell.GHC.ExactPrint ( Anns, exactPrint )
+import Language.Haskell.GHC.ExactPrint.Transform ( runTransform )
+import Name ()
+import Outputable ()
+import Plugins
+    ( CommandLineOption,
+      Plugin(..),
+      PluginRecompile(..),
+      defaultPlugin )
+import PrelNames ()
+import RdrName ( GlobalRdrElt )
+import RnNames ( findImportUsage )
+import Smuggler.Anns ( removeAnnAtLoc, removeTrailingCommas )
+import Smuggler.Import ( unusedLocs )
+import Smuggler.Export
+    ( addCommaT,
+      addExportDeclAnnT,
+      addParensT,
+      mkIEVarFromNameT,
+      mkNamesFromAvailInfos )
+import Smuggler.Parser ( runParser )
+import SrcLoc ( unLoc, GenLocated(L), Located )
+import System.FilePath ( (-<.>) )
+import TcRnTypes ( TcGblEnv(..), TcM )
 
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin
                        , pluginRecompile       = smugglerRecompile
                        }
-
-defaultCol :: Int
-defaultCol = 120
 
 -- TODO: would it be worth computing a fingerprint to force recompile if
 -- imports were removed?
@@ -125,71 +129,3 @@ smugglerPlugin clis modSummary tcEnv = do
             case clis of
               []        -> writeFile modulePath newContent
               (ext : _) -> writeFile (modulePath -<.> ext) newContent
-
--- TODO: reuse more logic from GHC. Is it possible?
-unusedLocs :: ImportDeclUsage -> [(Int, Int)]
-unusedLocs (L (UnhelpfulSpan _) _, _, _) = []
-unusedLocs (L (RealSrcSpan loc) decl, used, unused)
-  |
-  -- Do not remove `import M ()`
-    Just (False, L _ []) <- ideclHiding decl
-  = []
-  |
-  -- Note [Do not warn about Prelude hiding]
-  -- TODO: add ability to support custom prelude
-    Just (True, L _ hides) <- ideclHiding decl
-  , not (null hides)
-  , pRELUDE_NAME == unLoc (ideclName decl)
-  = []
-  |
-  {-
-      This is is not always correct, because instances may be imported
-      as in first case above
-
-      -- Nothing used; drop entire decl
-      | null used = [ (lineNum, colNum)
-                    | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
-                    , colNum <-  [srcSpanStartCol loc .. getEndColMax unused]
-                    ]
-  -}
-
-  -- Everything imported is used; drop nothing
-    null unused
-  = []
-  |
-  -- only part of non-hiding import is used
-    Just (False, L _ lies) <- ideclHiding decl
-  = unusedLies lies
-  |
-  -- TODO: unused hidings
-    otherwise
-  = []
- where
-  unusedLies :: [LIE GhcRn] -> [(Int, Int)]
-  unusedLies = concatMap lieToLoc
-
-  lieToLoc :: LIE GhcRn -> [(Int, Int)]
-  lieToLoc (L _ lie) = case lie of
-    IEVar      _ name            -> lieNameToLoc name
-    IEThingAbs _ name            -> lieNameToLoc name
-    IEThingAll _ name            -> lieNameToLoc name
-    IEThingWith _ name _ names _ -> concatMap lieNameToLoc (name : names)
-    _                            -> []
-
-  lieNameToLoc :: LIEWrappedName Name -> [(Int, Int)]
-  lieNameToLoc lieName = do
-    L _ (IEName (L (RealSrcSpan lieLoc) name)) <- [lieName]
-    guard $ name `elem` unused
-    pure (srcSpanStartLine lieLoc, srcSpanStartCol lieLoc)
-
-  getEndColMax :: [Name] -> Int
-  getEndColMax u = listMax $ map (findColLoc . nameSrcSpan) u
-
-  findColLoc :: SrcSpan -> Int
-  findColLoc (RealSrcSpan   l) = srcSpanEndCol l
-  findColLoc (UnhelpfulSpan _) = defaultCol
-
-listMax :: [Int] -> Int
-listMax []           = defaultCol
-listMax [x         ] = x
-listMax (x : y : xs) = listMax ((if x >= y then x else y) : xs)

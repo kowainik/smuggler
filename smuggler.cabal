@@ -59,7 +59,8 @@ library
   hs-source-dirs:  src
   exposed-modules:
     Smuggler.Anns
-    Smuggler.Exports
+    Smuggler.Export
+    Smuggler.Import
     Smuggler.Loc
     Smuggler.Options
     Smuggler.Parser
