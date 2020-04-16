@@ -22,6 +22,9 @@ import SrcLoc
     unLoc,
   )
 
+
+-- TODO: rewrite this as a transform, like Export
+
 -- TODO: reuse more logic from GHC. Is it possible?
 unusedLocs :: ImportDeclUsage -> [(Int, Int)]
 unusedLocs (L (UnhelpfulSpan _) _, _, _) = []

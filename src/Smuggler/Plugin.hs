@@ -4,39 +4,26 @@ module Smuggler.Plugin
   )
 where
 
-import Avail ( AvailInfo )
-import Control.Monad ( unless )
-import Control.Monad.IO.Class ( MonadIO(..) )
+import Control.Monad.IO.Class ( liftIO )
 import Data.List ( foldl' )
-import Debug.Trace ()
 import DynFlags ( DynFlags, HasDynFlags(getDynFlags) )
 import GHC.IO.Encoding ( setLocaleEncoding, utf8 )
 import HscTypes ( ModSummary(..) )
-import HsSyn
-    ( GhcPs, ImportDecl(ideclImplicit), HsModule(hsmodExports) )
+import HsSyn ( ImportDecl(ideclImplicit), HsModule(hsmodExports) )
 import IOEnv ( readMutVar )
-import Language.Haskell.GHC.ExactPrint ( Anns, exactPrint )
-import Language.Haskell.GHC.ExactPrint.Transform ( runTransform )
-import Name ()
-import Outputable ()
+import Language.Haskell.GHC.ExactPrint ( exactPrint )
 import Plugins
     ( CommandLineOption,
       Plugin(..),
       PluginRecompile(..),
       defaultPlugin )
-import PrelNames ()
 import RdrName ( GlobalRdrElt )
 import RnNames ( findImportUsage )
 import Smuggler.Anns ( removeAnnAtLoc, removeTrailingCommas )
 import Smuggler.Import ( unusedLocs )
-import Smuggler.Export
-    ( addCommaT,
-      addExportDeclAnnT,
-      addParensT,
-      mkIEVarFromNameT,
-      mkNamesFromAvailInfos )
+import Smuggler.Export ( addExplicitExports )
 import Smuggler.Parser ( runParser )
-import SrcLoc ( unLoc, GenLocated(L), Located )
+import SrcLoc ( unLoc, GenLocated(L) )
 import System.FilePath ( (-<.>) )
 import TcRnTypes ( TcGblEnv(..), TcM )
 
@@ -59,27 +46,6 @@ smugglerPlugin clis modSummary tcEnv = do
   tcEnv <$ liftIO (smuggling dflags uses modulePath)
  where
 
-  addExplicitExports
-    :: DynFlags
-    -> [AvailInfo]
-    -> (Anns, Located (HsModule GhcPs))
-    -> (Anns, Located (HsModule GhcPs))
-  addExplicitExports dflags exports (anns, L astLoc hsMod) = (anns', ast')
-   where
-    (ast', (anns', _n), _s) = runTransform anns $ do
-
-      let names = mkNamesFromAvailInfos exports
-
-      exportsList <- mapM mkIEVarFromNameT names
-      mapM_ addExportDeclAnnT exportsList
-      unless (null exportsList) $ mapM_ addCommaT (init exportsList)
-
-      let lExportsList = L astLoc exportsList
-          hsMod'       = hsMod { hsmodExports = Just lExportsList }
-      addParensT lExportsList
-
-      return (L astLoc hsMod')
-
   smuggling :: DynFlags -> [GlobalRdrElt] -> FilePath -> IO ()
   smuggling dflags uses modulePath = do
 
@@ -95,9 +61,9 @@ smugglerPlugin clis modSummary tcEnv = do
 
         -- EXPORTS
 
-        -- What the mdule exports, implicitly or exportsListicitly
+        -- What the module exports, implicitly or explicitly
         let allExports             = tcg_exports tcEnv
-        -- hsmodExports :: Maybe (Located [LIE pass])
+
         let currentExplicitExports = hsmodExports hsMod
 
         -- 2.  Annotate with exportsListicit export declaration, if there ism't an existing one
@@ -121,7 +87,7 @@ smugglerPlugin clis modSummary tcEnv = do
           []     -> pure () -- do nothing if no unused imports
           unused -> do
             let purifiedAnnotations = removeTrailingCommas $ foldl'
-                  (\ann (x, y) -> removeAnnAtLoc x y ann)
+                  (\ann (x, y) -> removeAnnAtLoc x y ann) -- this seems a bit scattergun
                   anns'
                   unused
             putStrLn $ exactPrint ast' purifiedAnnotations
