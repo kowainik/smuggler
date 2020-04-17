@@ -1,12 +1,15 @@
 module Smuggler.Options
   ( Options(..)
   , parseCommandLineOptions
+  , ImportAction(..)
+  , ExportAction(..)
   )
 where
 
-import           Data.List                      ( foldl' )
-import           Data.Char                      ( toLower )
-import           Plugins
+import Data.List ( foldl' )
+import Data.Char ( toLower )
+import Plugins ( CommandLineOption )
+
 
 data ImportAction = NoImportProcessing | PreserveInstanceImports | MinimiseImports
 
@@ -16,7 +19,7 @@ data Options
   = Options
       { importAction :: ImportAction,
         exportAction :: ExportAction,
-        newSuffix :: Maybe String
+        newExtension :: Maybe String
       }
 
 defaultOptions :: Options
@@ -30,7 +33,7 @@ parseCommandLineOption opts clo = case toLower <$> clo of
   "noexportprocessing"      -> opts { exportAction = NoExportProcessing }
   "addexplicitexports"      -> opts { exportAction = AddExplicitExports }
   "replaceexports"          -> opts { exportAction = ReplaceExports }
-  suffix                    -> opts { newSuffix = Just suffix }
+  extension                 -> opts { newExtension = Just extension }
 
 
 parseCommandLineOptions :: [CommandLineOption] -> Options

@@ -5,11 +5,11 @@ module Smuggler.Plugin
 where
 
 import Control.Monad.IO.Class ( liftIO )
-import Data.List ( foldl' )
+import Data.List ()
 import DynFlags ( DynFlags, HasDynFlags(getDynFlags) )
 import GHC.IO.Encoding ( setLocaleEncoding, utf8 )
 import HscTypes ( ModSummary(..) )
-import HsSyn ( ImportDecl(ideclImplicit), HsModule(hsmodExports) )
+import HsSyn ( ImportDecl(ideclImplicit) )
 import IOEnv ( readMutVar )
 import Language.Haskell.GHC.ExactPrint ( exactPrint )
 import Plugins
@@ -18,14 +18,15 @@ import Plugins
       PluginRecompile(..),
       defaultPlugin )
 import RdrName ( GlobalRdrElt )
-import RnNames ( findImportUsage )
-import Smuggler.Anns ( removeAnnAtLoc, removeTrailingCommas )
-import Smuggler.Import ( unusedLocs )
+import Smuggler.Import ( minimiseImports )
 import Smuggler.Export ( addExplicitExports )
+import Smuggler.Options ( parseCommandLineOptions, Options(..) )
 import Smuggler.Parser ( runParser )
-import SrcLoc ( unLoc, GenLocated(L) )
+import SrcLoc ( unLoc )
 import System.FilePath ( (-<.>) )
 import TcRnTypes ( TcGblEnv(..), TcM )
+
+
 
 plugin :: Plugin
 plugin = defaultPlugin { typeCheckResultAction = smugglerPlugin
@@ -54,44 +55,31 @@ smugglerPlugin clis modSummary tcEnv = do
     setLocaleEncoding utf8
     fileContents <- readFile modulePath
 
+    let options = parseCommandLineOptions clis
+
     -- 1. Parse given file
     runParser modulePath fileContents >>= \case
-      Left  ()                         -> pure () -- do nothing if file is invalid Haskell
-      Right (anns, ast@(L _loc hsMod)) -> do
+      Left  ()          -> pure () -- do nothing if file is invalid Haskell
+      Right (anns, ast) -> do
 
         -- EXPORTS
 
         -- What the module exports, implicitly or explicitly
-        let allExports             = tcg_exports tcEnv
-
-        let currentExplicitExports = hsmodExports hsMod
-
-        -- 2.  Annotate with exportsListicit export declaration, if there ism't an existing one
-        let (anns', ast') = case currentExplicitExports of
-              Just _ -> (anns, ast) -- there is an existing export export list
-              Nothing ->
-                addExplicitExports dflags allExports (anns, ast)
-
-        putStrLn $ exactPrint ast' anns'
+        let allExports = tcg_exports tcEnv
 
         -- IMPORTS
 
         -- 3. find positions of unused imports
         let user_imports =
               filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
-        let usage           = findImportUsage user_imports uses
-        let unusedPositions = concatMap unusedLocs usage
+
+        let (anns', ast') =
+              minimiseImports dflags (importAction options) user_imports uses
+                $ addExplicitExports dflags (exportAction options) allExports (anns, ast)
 
         -- 4. Remove positions of unused imports from annotations
-        case unusedPositions of
-          []     -> pure () -- do nothing if no unused imports
-          unused -> do
-            let purifiedAnnotations = removeTrailingCommas $ foldl'
-                  (\ann (x, y) -> removeAnnAtLoc x y ann) -- this seems a bit scattergun
-                  anns'
-                  unused
-            putStrLn $ exactPrint ast' purifiedAnnotations
-            let newContent = exactPrint ast' purifiedAnnotations
-            case clis of
-              []        -> writeFile modulePath newContent
-              (ext : _) -> writeFile (modulePath -<.> ext) newContent
+        putStrLn $ exactPrint ast' anns'
+        let newContent = exactPrint ast' anns'
+        case newExtension options of
+          Nothing  -> writeFile modulePath newContent
+          Just ext -> writeFile (modulePath -<.> ext) newContent

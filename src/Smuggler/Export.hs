@@ -1,25 +1,26 @@
-module Smuggler.Export where
+module Smuggler.Export (addExplicitExports) where
 
-import Control.Monad ( unless )
-import DynFlags ( DynFlags )
+
 import Avail ( AvailInfo, availNamesWithSelectors )
-import Debug.Trace ()
+import Control.Monad ( unless )
+import Data.Maybe ( isNothing )
+import DynFlags ( DynFlags )
 import GHC
     ( AnnKeywordId(..),
       GenLocated(..),
+      HsModule,
       IE(..),
       IEWrappedName(..),
       Located,
       Name,
-      HsModule,
       hsmodExports )
 import Language.Haskell.GHC.ExactPrint.Transform
-    ( TransformT, addSimpleAnnT, uniqueSrcSpanT, runTransform )
+    ( TransformT, addSimpleAnnT, runTransform, uniqueSrcSpanT )
 import Language.Haskell.GHC.ExactPrint.Types
     ( Anns, DeltaPos(DP), GhcPs, KeywordId(G), noExt )
 import OccName ( HasOccName(occName), OccName(occNameFS) )
 import RdrName ( mkVarUnqual )
-
+import Smuggler.Options ( ExportAction(..) )
 
 -- See https://www.machinesung.com/scribbles/terser-import-declarations.html
 -- and https://www.machinesung.com/scribbles/ghc-api.html
@@ -27,11 +28,19 @@ import RdrName ( mkVarUnqual )
 
 addExplicitExports
   :: DynFlags
+  -> ExportAction
   -> [AvailInfo]
   -> (Anns, Located (HsModule GhcPs))
   -> (Anns, Located (HsModule GhcPs))
-addExplicitExports dflags exports (anns, L astLoc hsMod) = (anns', ast')
+addExplicitExports dflags action exports p@(anns, L astLoc hsMod) =
+  case action of
+    NoExportProcessing -> p
+    AddExplicitExports ->
+      if isNothing currentExplicitExports then (anns', ast') else p
+    ReplaceExports -> (anns', ast')
  where
+  currentExplicitExports  = hsmodExports hsMod
+
   (ast', (anns', _n), _s) = runTransform anns $ do
 
     let names = mkNamesFromAvailInfos exports
