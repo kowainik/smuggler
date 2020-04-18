@@ -29,6 +29,8 @@ import SrcLoc
       GenLocated(L) )
 import GHC ( HsModule, GhcPs )
 
+import Outputable
+
 minimiseImports
   :: DynFlags
   -> ImportAction
@@ -38,13 +40,13 @@ minimiseImports
   -> (Anns, Located (HsModule GhcPs))
 minimiseImports dflags action user_imports uses p@(anns, ast) = case action of
   NoImportProcessing -> p
-  _ -> if null unusedPositions then p else (purifiedAnnotations, ast)
+  _                  -> (purifiedAnnotations, ast)
  where
   usage :: [ImportDeclUsage]
   usage = findImportUsage user_imports uses
 
   unusedPositions :: [(Int, Int)]
-  unusedPositions = concatMap (unusedLocs action) usage
+  unusedPositions = concatMap (unusedLocs dflags action) usage
 
   purifiedAnnotations :: Anns
   purifiedAnnotations = removeTrailingCommas -- Does removeTrailing commas work on []? If so simplify above
@@ -54,43 +56,44 @@ minimiseImports dflags action user_imports uses p@(anns, ast) = case action of
 -- TODO: rewrite this as a transform, like Export
 
 -- TODO: reuse more logic from GHC. Is it possible?
-unusedLocs :: ImportAction -> ImportDeclUsage -> [(Int, Int)]
-unusedLocs _ (L (UnhelpfulSpan _) _, _, _) = []
-unusedLocs action (L (RealSrcSpan loc) decl, used, unused)
+unusedLocs :: DynFlags -> ImportAction -> ImportDeclUsage -> [(Int, Int)]
+unusedLocs _ _ (L (UnhelpfulSpan _) _, _, _) = []
+unusedLocs dynflags action (L (RealSrcSpan loc) decl, used, unused)
   | -- Do not remove `import M ()`
     Just (False, L _ []) <- ideclHiding decl
   = []
-
   | -- Note [Do not warn about Prelude hiding]
     -- TODO: add ability to support custom prelude
     Just (True, L _ hides) <- ideclHiding decl
   , not (null hides)
   , pRELUDE_NAME == unLoc (ideclName decl)
   = []
-
-  | -- only part of non-hiding import is used
-    Just (False, L _ lies) <- ideclHiding decl
-  = unusedLies lies
-
+{-
   | -- Nothing used
     null used
   = case action of
-    PreserveInstanceImports ->
-      case ideclHiding decl of
-        Nothing -> [] -- ?
-        Just (True, _) -> [] -- TODO: deal with unused hidings
-        Just (False, L _ lies) -> unusedLies lies
+    PreserveInstanceImports -> case ideclHiding decl of
+      Nothing -> trace ("Nothing:\ndecl: " ++ showSDoc dynflags (ppr decl)
+           ++ " used: " ++ showSDoc dynflags (ppr used)
+           ++ " unused: " ++ showSDoc dynflags (ppr unused)
+           ) []
+--      Nothing -> error " Yuk"
+      Just (True , _       ) -> [] -- TODO: deal with unused hidings
+      Just (False, L _ lies) -> unusedLies lies
     MinimiseImports ->
       -- Drop entire decl
       [ (lineNum, colNum)
       | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
       , colNum  <- [srcSpanStartCol loc .. getEndColMax unused]
       ]
-    NoImportProcessing -> error "Processing imports, when should not be doing so"
+    NoImportProcessing ->
+      error "Processing imports, when should not be doing so"
+-}
+  | null unused = [] -- Everything imported is used; drop nothing
 
-  | -- Everything imported is used; drop nothing
-    null unused
-  = []
+  | -- only part of non-hiding import is used
+    Just (False, L _ lies) <- ideclHiding decl
+  = unusedLies lies
 
   | -- TODO: unused hidings
     otherwise

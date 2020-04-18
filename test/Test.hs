@@ -45,9 +45,9 @@ main = do
     outputFailure :: String -> String -> IO ()
     outputFailure given expected = do
       boldMessage "Expected:"
-      putStrLn (importStatementsOnly expected)
+      putStrLn expected
       boldMessage "But got:"
-      putStrLn (importStatementsOnly given)
+      putStrLn given
 
 successCode, failureCode, resetCode :: [SGR]
 successCode = [SetColor Foreground Dull Green]
