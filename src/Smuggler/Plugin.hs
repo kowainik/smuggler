@@ -75,7 +75,8 @@ smugglerPlugin clis modSummary tcEnv = do
 
         let (anns', ast') =
               minimiseImports dflags (importAction options) user_imports uses
-                $ addExplicitExports dflags (exportAction options) allExports (anns, ast)
+                (anns, ast)
+--                $ addExplicitExports dflags (exportAction options) allExports (anns, ast)
 
         -- 4. Remove positions of unused imports from annotations
         putStrLn $ exactPrint ast' anns'
