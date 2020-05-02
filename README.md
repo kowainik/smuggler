@@ -1,9 +1,12 @@
 # smuggler
 
 ![smuggler-logo](https://user-images.githubusercontent.com/4276606/45937457-c2715c00-bff2-11e8-9766-f91051d36ffe.png)
+<!--
 [![Hackage](https://img.shields.io/hackage/v/smuggler.svg?logo=haskell)](https://hackage.haskell.org/package/smuggler)
 [![Build](https://img.shields.io/travis/kowainik/smuggler.svg?logo=travis)](http://travis-ci.org/kowainik/smuggler)
+-->
 [![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/kowainik/smuggler/blob/master/LICENSE)
+![GitHub CI](https://github.com/actions/smuggler/workflows/.github/workflows/haskell.yml/badge.svg)
 
 > “So many people consider their work a daily punishment. Whereas I love my work
 > as a translator. Translation is a journey over a sea from one shore to the

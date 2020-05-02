@@ -1,4 +1,4 @@
-name: Haskell CI
+name: Smuggler
 
 on:
   push:
