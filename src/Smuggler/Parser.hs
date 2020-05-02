@@ -17,8 +17,8 @@ runParser
 runParser fileName fileContents = do
   res <- parseModuleFromString fileName fileContents
   pure $ case res of
-    Left  (_srcSpan, _str) -> Left ()
-    Right x                -> Right x
+    Left  _ -> Left () -- The error case type changed in 8.10
+    Right x -> Right x
 
 -- newtype ParseException = ParseException String
 --     deriving (Show)
