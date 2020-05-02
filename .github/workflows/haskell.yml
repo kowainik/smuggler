@@ -1,0 +1,55 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix: 
+        ghc: ['8.10.1', '8.8.3']
+        cabal: ['3.2.0.0']
+        os: [ubuntu-latest]  
+
+    name: Haskell GHC ${{ matrix.ghc }} smuggler
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Haskell
+      uses: actions/setup-haskell@v1
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - name: Cache Cabal
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.ghc }}-${{ env.cache-name }}-
+          ${{ runner.os }}-${{ matrix.ghc }}-
+          ${{ runner.os }}-
+
+    - uses: actions/cache@v1
+      name: Cache dist-newstyle
+      with:
+        path: dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.ghc }}-dist-newstyle
+
+    - name: Install dependencies
+      run: |
+        cabal update
+        cabal build --only-dependencies --enable-tests --enable-benchmarks
+    
+    - name: Build
+      run: cabal build --enable-tests all
+    
+    - name: Run tests
+      run: cabal test all
