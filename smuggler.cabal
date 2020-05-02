@@ -102,24 +102,24 @@ common common-tests
   import:         common-options
   hs-source-dirs: test
   other-modules:
-    --Test.BoolBoolUnused
-    --Test.BoolBoolUsed
-    --Test.BoolPartlyUsedFirst
-    --Test.BoolPartlyUsedLast
-    --Test.ConstructorsUnused
-    --Test.Dummy
-    --Test.ExportExplicit
-    --Test.ExportImplicit
+    Test.BoolBoolUnused
+    Test.BoolBoolUsed
+    Test.BoolPartlyUsedFirst
+    Test.BoolPartlyUsedLast
+    Test.ConstructorsUnused
+    Test.Dummy
+    Test.ExportExplicit
+    Test.ExportImplicit
     Test.ImplicitImportUnused
-    --Test.ImplicitImportUsed
-    --Test.ImportEmpty
-    --Test.MultilineUnused
-    --Test.TypeConstructorUnused
-    --Test.TypeConstructorUnusedComma
-    --Test.TypeConstructorUsed
-    --Test.TypeUnused
-    --Test.TypeUsed
-    --Test.WildcardUnused
+    Test.ImplicitImportUsed
+    Test.ImportEmpty
+    Test.MultilineUnused
+    Test.TypeConstructorUnused
+    Test.TypeConstructorUnusedComma
+    Test.TypeConstructorUsed
+    Test.TypeUnused
+    Test.TypeUsed
+    Test.WildcardUnused
 
   build-depends:
     , ansi-terminal
