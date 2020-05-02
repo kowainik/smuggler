@@ -6,7 +6,8 @@
 [![Build](https://img.shields.io/travis/kowainik/smuggler.svg?logo=travis)](http://travis-ci.org/kowainik/smuggler)
 -->
 [![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://github.com/kowainik/smuggler/blob/master/LICENSE)
-![GitHub CI](https://github.com/actions/smuggler/workflows/.github/workflows/haskell.yml/badge.svg)
+![Github CI](https://github.com/jrp2014/smuggler/workflows/Smuggler/badge.svg)
+
 
 > “So many people consider their work a daily punishment. Whereas I love my work
 > as a translator. Translation is a journey over a sea from one shore to the
