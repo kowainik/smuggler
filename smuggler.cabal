@@ -76,6 +76,8 @@ library
     , containers      >=0.5   && <0.7
     , filepath        ^>=1.4
     , ghc             >=8.8.0
+    -- for GHC 8.10:
+    , ghc-api-compat
     , ghc-exactprint  ^>=0.6
     , syb
 
