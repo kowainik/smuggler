@@ -1,76 +1,84 @@
 module Smuggler.Import where
 
+import           Avail
+import           BasicTypes
 import           Control.Monad                  ( guard )
-import           HsSyn                          ( GhcRn )
-import           Name                           ( Name
-                                                , nameSrcSpan
-                                                )
-import           PrelNames                      ( pRELUDE_NAME )
-import           RnNames                        ( ImportDeclUsage
-                                                , findImportUsage
-                                                , getMinimalImports
-                                                )
-import           Smuggler.Options               ( ImportAction(..) )
-import           Smuggler.Anns                  ( removeAnnAtLoc
-                                                , removeTrailingCommas
-                                                )
 import           Data.List                      ( foldl' )
+import           Data.Maybe                     ( isNothing )
 import           DynFlags                       ( DynFlags )
-import           RdrName                        ( GlobalRdrElt )
-import           HsImpExp                       ( ideclImplicit
-                                                , ieLWrappedName
-                                                , IE
-                                                  ( IEThingWith
-                                                  , IEVar
-                                                  , IEThingAbs
+import           GHC                            ( AnnKeywordId(..)
+                                                , GhcPs
+                                                , HsModule
+                                                , hsmodImports
+                                                , ieName
+                                                )
+import           HsImpExp                       ( IE
+                                                  ( IEThingAbs
                                                   , IEThingAll
+                                                  , IEThingWith
+                                                  , IEVar
                                                   )
                                                 , IEWrappedName(IEName)
                                                 , ImportDecl
-                                                  ( ideclName
-                                                  , ideclHiding
+                                                  ( ideclHiding
+                                                  , ideclName
                                                   )
                                                 , LIE
                                                 , LIEWrappedName
                                                 , LImportDecl
+                                                , ideclImplicit
+                                                , ieLWrappedName
+                                                , pprImpExp
                                                 )
-import           Language.Haskell.GHC.ExactPrint.Types
-                                                ( Anns )
-import           SrcLoc                         ( SrcSpan(..)
-                                                , Located
-                                                , srcSpanEndCol
-                                                , srcSpanEndLine
-                                                , srcSpanStartCol
-                                                , srcSpanStartLine
-                                                , unLoc
-                                                , GenLocated(L)
-                                                )
-import           GHC                            ( AnnKeywordId(..)
-                                                , HsModule
-                                                , GhcPs
-                                                , hsmodImports
-                                                )
+import           HsSyn                          ( GhcRn )
+import           Language.Haskell.GHC.ExactPrint.Print
+                                                ( exactPrint )
 import           Language.Haskell.GHC.ExactPrint.Transform
                                                 ( TransformT
                                                 , addSimpleAnnT
+                                                , logDataWithAnnsTr
+                                                , logTr
+                                                , removeTrailingCommaT
                                                 , runTransform
+                                                , setEntryDPT
                                                 , uniqueSrcSpanT
                                                 )
-import           Outputable
-import           TcRnTypes
-import           Avail
-import           LoadIface
-import           BasicTypes
-import           Language.Haskell.GHC.ExactPrint.Utils
-                                                ( ss2posEnd, debug )
 import           Language.Haskell.GHC.ExactPrint.Types
                                                 ( Anns
                                                 , DeltaPos(DP)
                                                 , KeywordId(G)
                                                 , noExt
                                                 )
-import Language.Haskell.GHC.ExactPrint.Print (exactPrint)
-
+import           Language.Haskell.GHC.ExactPrint.Utils
+                                                ( debug
+                                                , ss2posEnd
+                                                )
+import           LoadIface
+import           Name                           ( Name
+                                                , nameSrcSpan
+                                                )
+import           Outputable
+import           PrelNames                      ( pRELUDE_NAME )
+import           RdrName                        ( GlobalRdrElt )
+import           RnNames                        ( ImportDeclUsage
+                                                , findImportUsage
+                                                , getMinimalImports
+                                                )
+import           Smuggler.Anns                  ( removeAnnAtLoc
+                                                , removeLocatedKeywordT
+                                                , removeTrailingCommas
+                                                )
+import           Smuggler.Options               ( ImportAction(..) )
+import           SrcLoc                         ( GenLocated(L)
+                                                , Located
+                                                , SrcSpan(..)
+                                                , srcSpanEndCol
+                                                , srcSpanEndLine
+                                                , srcSpanStartCol
+                                                , srcSpanStartLine
+                                                , unLoc
+                                                )
+import           TcRnTypes
 
 minimiseImports
   :: DynFlags
@@ -79,148 +87,144 @@ minimiseImports
   -> [GlobalRdrElt]
   -> (Anns, Located (HsModule GhcPs))
   -> (Anns, Located (HsModule GhcPs))
-minimiseImports dflags action user_imports uses p@(anns, ast) = case action of
-  NoImportProcessing -> p
-  _                  -> (purifiedAnnotations, ast)
+minimiseImports dflags action user_imports uses p@(anns, ast@(L astLoc hsMod))
+  = case action of
+    NoImportProcessing -> p
+    _                  -> (anns', L astLoc hsMod')
  where
+
+  imports :: [LImportDecl GhcPs]
+  imports = hsmodImports hsMod
+
+  -- ImportDeclUsage = (LImportDecl GhcRn, used: [AvailInfo], unused: [Name])
   usage :: [ImportDeclUsage]
-  usage                    = findImportUsage user_imports uses
+  usage             = findImportUsage user_imports uses
 
-  (anns', unusedPositions) = findUnusedLocs anns usage
 
-  findUnusedLocs :: Anns -> [ImportDeclUsage] -> (Anns, [(Int, Int)])
-  findUnusedLocs anns []       = (anns, [])
-  findUnusedLocs anns (u : us) = (anns'', unusedPositions ++ unusedPositions')
+  (anns', imports') = findUsedImports anns imports usage
+  hsMod'            = hsMod { hsmodImports = imports' }
+
+  {-
+  (ast', (anns', _n), _s) = runTransform anns $ do
+
+      let imports' = undefined
+
+      let hsMod' = hsMod { hsmodImports = imports' }
+
+-}
+  findUsedImports
+    :: Anns
+    -> [LImportDecl GhcPs]
+    -> [ImportDeclUsage]
+    -> (Anns, [LImportDecl GhcPs])
+  findUsedImports anns [] [] = (anns, [])
+  findUsedImports anns (p : ps) (r : rs) =
+    (anns'', usedImports ++ usedImports')
    where
-    (anns' , unusedPositions ) = unusedLocs dflags action anns u
-    (anns'', unusedPositions') = findUnusedLocs anns' us
-
-
-  purifiedAnnotations :: Anns
-  purifiedAnnotations = removeTrailingCommas -- Does removeTrailing commas work on []? If so simplify above
-    $ foldl' (\ann (x, y) -> removeAnnAtLoc x y ann) -- this seems a bit scattergun
-                                                     anns' unusedPositions
+    (anns' , usedImports ) = usedImport dflags action anns p r
+    (anns'', usedImports') = findUsedImports anns' ps rs
 
 -- TODO: rewrite this as a transform, like Export?
 
 -- TODO: reuse more logic from GHC. Is it possible?
-unusedLocs
-  :: DynFlags -> ImportAction -> Anns -> ImportDeclUsage -> (Anns, [(Int, Int)])
-unusedLocs _ _ anns (L (UnhelpfulSpan _) _, _, _) = (anns, [])
-unusedLocs dynflags action anns (imp@(L (RealSrcSpan loc) decl), used, unused)
-  | -- Do not remove `import M ()`
-    Just (False, L _ []) <- ideclHiding decl
-  = (anns, [])
-  | -- Note [Do not warn about Prelude hiding]
-    -- TODO: add ability to support custom prelude
-    Just (True, L _ hides) <- ideclHiding decl
-  , not (null hides)
-  , ideclImplicit decl -- pRELUDE_NAME == unLoc (ideclName decl)
-  = (anns, [])
-  | -- Nothing used
-    null used
-  = case action of
-    PreserveInstanceImports -> case ideclHiding decl of
---      Nothing -> trace ("Nothing:\ndecl: " ++ showSDoc dynflags (ppr decl)
---           ++ " used: " ++ showSDoc dynflags (ppr used)
---           ++ " unused: " ++ showSDoc dynflags (ppr unused)
---           ) []
-      Nothing -> 
-
-        -- This isn't enough;  need also to mod iDeclHiding decl
-        let (_ast, (anns', _n), _s) = runTransform anns $ do
-              addSimpleAnnT
-                imp
-                (DP (0, 0))
-                [(G AnnOpenP,DP (0,0)),(G AnnCloseP,DP (0,0))]
-
-        in  (anns', []) 
-
-
-      Just (True , _       ) -> (anns, []) -- TODO: deal with unused hidings
-      Just (False, L _ lies) -> (anns, unusedLies lies)
-    MinimiseImports ->
-      ( anns
-      ,
-      -- Drop entire decl
-        [ (lineNum, colNum)
-        | lineNum <- [srcSpanStartLine loc .. srcSpanEndLine loc]
-        , colNum <- [srcSpanStartCol loc .. getEndColMax unused]
-        ]
-      )
-    NoImportProcessing ->
-      error "Processing imports, when should not be doing so"
-  | null unused
-  = (anns, [])
-  | -- Everything imported is used; drop nothing -- only part of non-hiding import is used
-    Just (False, L _ lies) <- ideclHiding decl
-  = (anns, unusedLies lies)
-  | -- TODO: unused hidings
-    otherwise
-  = (anns, [])
- where
-  unusedLies :: [LIE GhcRn] -> [(Int, Int)]
-  unusedLies = concatMap lieToLoc
-
-  lieToLoc :: LIE GhcRn -> [(Int, Int)]
-  lieToLoc (L _ lie) = case lie of
-    IEVar      _ name            -> lieNameToLoc name
-    IEThingAbs _ name            -> lieNameToLoc name
-    IEThingAll _ name            -> lieNameToLoc name
-    IEThingWith _ name _ names _ -> concatMap lieNameToLoc (name : names)
-    _                            -> []
-
-  lieNameToLoc :: LIEWrappedName Name -> [(Int, Int)]
-  lieNameToLoc lieName = do
-    L lieLoc name <- [ieLWrappedName lieName]
-    guard $ name `elem` unused
-    pure (ss2posEnd lieLoc)
-
-  getEndColMax :: [Name] -> Int
-  getEndColMax u = listMax $ map (srcSpanEndColumn' . nameSrcSpan) u
-
-  srcSpanEndColumn' :: SrcSpan -> Int
-  srcSpanEndColumn' (RealSrcSpan   l) = srcSpanEndCol l
-  srcSpanEndColumn' (UnhelpfulSpan _) = defaultCol
-
-defaultCol :: Int
-defaultCol = 120
-
-listMax :: [Int] -> Int
-listMax []           = defaultCol
-listMax [x         ] = x
-listMax (x : y : xs) = listMax ((if x >= y then x else y) : xs)
-
-
-
-
-removeSurplusImports
+usedImport
   :: DynFlags
   -> ImportAction
-  -> [LImportDecl GhcRn]
-  -> [GlobalRdrElt]
-  -> (Anns, Located (HsModule GhcPs))
-  -> (Anns, Located (HsModule GhcPs))
-removeSurplusImports dflags action user_imports uses p@(anns, L astLoc hsMod) =
-  case action of
-    NoImportProcessing -> p
-    _                  -> (anns', ast')
+  -> Anns
+  -> LImportDecl GhcPs
+  -> ImportDeclUsage
+  -> (Anns, [LImportDecl GhcPs])
+usedImport _ _ anns impPs (L (UnhelpfulSpan _) _, _, _) = (anns, [])
+usedImport dynflags action anns impPs@(L (RealSrcSpan locPs) declPs) (impRn@(L (RealSrcSpan locRn) declRn), used, unused)
+  | -- Do not remove `import M ()`
+    Just (False, L _ []) <- ideclHiding declRn
+  = (anns, [impPs])
+  | -- Note [Do not warn about Prelude hiding]
+    -- TODO: add ability to support custom prelude
+    Just (True, L _ hides) <- ideclHiding declRn
+  , not (null hides)
+  , ideclImplicit declRn -- pRELUDE_NAME == unLoc (ideclName decl)
+  = (anns, [impPs])
+  | -- Nothing used
+    null used
+  = case ideclHiding declRn of -- TODO:: the following cover only the PreserveInstanceImports case
+    Nothing -> -- add (), to import only instances
+      let (ast', (anns', _n), _s) = runTransform anns $ do
+            locHiding <- uniqueSrcSpanT
+            let lies = L locHiding [] :: Located [LIE GhcPs]
+            addSimpleAnnT lies
+                          (DP (0, 0))
+                          [(G AnnOpenP, DP (0, 0)), (G AnnCloseP, DP (0, 0))]
+            let declPs' = declPs { ideclHiding = Just (False, lies) }
+            let impPs'  = L (RealSrcSpan locPs) declPs'
+            return [impPs']
+      in  (anns', ast')
+    Just (False, L lieLoc _) -> -- just leave the ()
+      let (ast', (anns', _n), _s) = runTransform anns $ do
+            let noLIEs = L lieLoc [] :: Located [LIE GhcPs]
+            addSimpleAnnT noLIEs
+                          (DP (0, 0))
+                          [(G AnnOpenP, DP (0, 0)), (G AnnCloseP, DP (0, 0))]
+            let declPs' = declPs { ideclHiding = Just (False, noLIEs) }
+            let impPs'  = L (RealSrcSpan locPs) declPs'
+            return [impPs']
+      in  (anns', ast')
+    -- TODO:: hiding unuseds
+    Just (True, _) -> (anns, [impPs])
+  | -- Everything imported is used; drop nothing
+    null unused
+  = (anns, [impPs])
+  | -- only part of non-hiding import is used
+    Just (False, L _ liesRn) <- ideclHiding declRn
+  = let
+      Just (False, L locLIE liesPs) = ideclHiding declPs
+      (usedImportsPs, anns')        = usedLImportDeclsPs anns liesPs liesRn
+      declPs' = declPs { ideclHiding = Just (False, L locLIE usedImportsPs) }
+      impPs'                        = L (RealSrcSpan locPs) declPs'
+    in
+      (anns', [impPs'])
+  | -- TODO: unused hidings
+    otherwise
+  = (anns, [impPs])
  where
-  usage :: [ImportDeclUsage] -- [(LImportDecl GhcRn, used: [AvailInfo], unused: [Name])]
-  usage = findImportUsage user_imports uses
 
-  minimalUsage :: RnM [LImportDecl GhcRn]
-  minimalUsage            = getMinimalImports usage
+  -- TODO:: turn into a fold, or use monoid to make less ugly
 
-     --  - 'ApiAnnotation.AnnOpen', 'ApiAnnotation.AnnClose' for ideclSource
+  usedLImportDeclsPs
+    :: Anns -> [LIE GhcPs] -> [LIE GhcRn] -> ([LIE GhcPs], Anns)
+  usedLImportDeclsPs anns liesPs liesRn = removeTrailingComma
+    (concat liesPs', anns')
+   where
+    (liesPs', anns') = usedLImportDeclsPss anns liesPs liesRn
 
-     --  - 'ApiAnnotation.AnnHiding','ApiAnnotation.AnnOpen',
-     --    'ApiAnnotation.AnnClose' attached
-     --     to location in ideclHiding
+    removeTrailingComma :: ([LIE GhcPs], Anns) -> ([LIE GhcPs], Anns)
+    removeTrailingComma ([]  , anns) = ([], anns)
+    removeTrailingComma (lies, anns) = (lies', anns')
+     where
+      (lies', (anns', _), _) = runTransform anns $ do
+        removeTrailingCommaT (last lies)
+        setEntryDPT (head lies) (DP (0, 0))
+        return lies
 
-  (ast', (anns', _n), _s) = runTransform anns $ do
+    -- TODO:: the point is to remove the trailing comma at this level
+    usedLImportDeclsPss
+      :: Anns -> [LIE GhcPs] -> [LIE GhcRn] -> ([[LIE GhcPs]], Anns)
+    usedLImportDeclsPss anns [] [] = ([[]], anns)
+    usedLImportDeclsPss anns (liePs : liesPs) (lieRn : liesRn) =
+      let (liesPs', anns' ) = usedLImportDeclsPss anns liesPs liesRn
+          (liePs' , anns'') = usedLImportDeclPs anns' liePs lieRn
+      in  (liePs' : liesPs', anns'')
 
-    let hsMod' = hsMod { hsmodImports = hsmodImports hsMod }
-    return (L astLoc hsMod')
 
+    usedLImportDeclPs :: Anns -> LIE GhcPs -> LIE GhcRn -> ([LIE GhcPs], Anns)
+    usedLImportDeclPs anns liePs lieRn = if ieName (unLoc lieRn) `elem` unused
+      then
+  --      let (ast', (anns', _), s) = runTransform anns $ do
+  --            -- Superfluous
+  --            removeTrailingCommaT liePs
+  --            removeLocatedKeywordT (G GHC.AnnVal) liePs
+  --            return []
+  --      in   ([], anns')
+           ([], anns)
+      else ([liePs], anns)
 

@@ -1,4 +1,4 @@
-cabal-version:   2.4
+cabal-version:   3.0
 name:            smuggler
 version:         0.2.1.0
 synopsis:        GHC Source Plugin that helps to manage imports
@@ -77,12 +77,12 @@ library
     , filepath        ^>=1.4
     , ghc             ^>=8.8.0
     , ghc-exactprint  ^>=0.6
+    , syb
 
   if flag(debug)
     build-depends:
       , fmt
       , pretty-simple
-      , syb
       , text
 
 executable play-smuggler

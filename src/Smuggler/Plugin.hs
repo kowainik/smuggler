@@ -11,7 +11,8 @@ import GHC.IO.Encoding ( setLocaleEncoding, utf8 )
 import HscTypes ( ModSummary(..) )
 import HsSyn ( ImportDecl(ideclImplicit) )
 import IOEnv ( readMutVar )
-import Language.Haskell.GHC.ExactPrint ( exactPrint )
+import Language.Haskell.GHC.ExactPrint ( exactPrint  )
+import Language.Haskell.GHC.ExactPrint.Utils ( showAnnData )
 import Plugins
     ( CommandLineOption,
       Plugin(..),
@@ -62,25 +63,25 @@ smugglerPlugin clis modSummary tcEnv = do
       Left  ()          -> pure () -- do nothing if file is invalid Haskell
       Right (anns, ast) -> do
 
-        -- EXPORTS
+--        putStrLn $ "showAnnData\n" ++ showAnnData anns 2 ast
 
-        -- What the module exports, implicitly or explicitly
-        let allExports = tcg_exports tcEnv
-
-        -- IMPORTS
-
-        -- 3. find positions of unused imports
+        -- 3. Process unused imports
         let user_imports =
               filter (not . ideclImplicit . unLoc) (tcg_rn_imports tcEnv)
-
         let (anns', ast') =
               minimiseImports dflags (importAction options) user_imports uses
                 (anns, ast)
---                $ addExplicitExports dflags (exportAction options) allExports (anns, ast)
 
-        -- 4. Remove positions of unused imports from annotations
-        putStrLn $ exactPrint ast' anns'
-        let newContent = exactPrint ast' anns'
+        -- 4. Process exports
+        let allExports = tcg_exports tcEnv
+        let (anns'', ast'') =
+                addExplicitExports dflags (exportAction options) allExports (anns', ast')
+
+--        putStrLn $ "showAnnData\n" ++ showAnnData anns' 2 ast'
+
+        -- 4. Output the result
+--        putStrLn $ exactPrint ast' anns'
+        let newContent = exactPrint ast'' anns''
         case newExtension options of
           Nothing  -> writeFile modulePath newContent
           Just ext -> writeFile (modulePath -<.> ext) newContent
